@@ -16,6 +16,9 @@ database_name = "flavinhobot"
 database_id = "COLE_AQUI_O_ID_DO_D1"   # saída de `wrangler d1 create flavinhobot`
 migrations_dir = "migrations"
 
+# No deploy pelo GitHub Actions, PUBLIC_BASE_URL, PROTECTED_CHAT_IDS, ADMIN_CHAT_ID, ADMIN_IDS
+# e o database_id vêm das variáveis do environment "production" (docs/DEPLOY.md).
+# Os valores abaixo só valem para deploy manual.
 [vars]
 PUBLIC_BASE_URL = "https://flavinhobot.SUA-CONTA.workers.dev"
 PROTECTED_CHAT_IDS = ""            # ex.: "-1001234567890,-1009876543210"
