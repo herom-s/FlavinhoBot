@@ -5,6 +5,7 @@ import { D1Repository } from "./db/d1Repository";
 import { handleAuthCallback, handleAuthStart } from "./http/authRoutes";
 import { runDailyJobs } from "./jobs/reverify";
 import { errorMessage, log } from "./logger";
+import { protectedChatIds } from "./services/context";
 import { reportError } from "./services/telegram";
 
 /** Comparação em tempo constante para o secret do webhook. */
@@ -34,7 +35,8 @@ export async function handleRequest(
   const s = app.services;
 
   if (pathname === "/health" && req.method === "GET") {
-    return json({ ok: true, bot: s.botUsername(), chats: s.config.protectedChatIds.length });
+    const chats = (await protectedChatIds(s)).length;
+    return json({ ok: true, bot: s.botUsername(), chats });
   }
 
   if (pathname === "/webhook") {

@@ -13,6 +13,7 @@ import {
   BASE_URL,
   CHAT_A,
   CHAT_B,
+  botPromoted,
   callbackQuery,
   groupCommand,
   Harness,
@@ -367,6 +368,79 @@ describe("/help", () => {
     const h = new Harness();
     await h.update(groupCommand(USER, -777, "/help"));
     expect(h.calls).toHaveLength(0);
+  });
+});
+
+describe("proteger grupos pelo Telegram", () => {
+  const NEW_CHAT = -1003;
+  const buttons = (call: { payload: Record<string, unknown> } | undefined) =>
+    JSON.stringify(call?.payload.reply_markup ?? {});
+
+  it("bot promovido num grupo novo pergunta no chat de admins, com botão de proteger", async () => {
+    const h = new Harness();
+    await h.update(botPromoted(NEW_CHAT, "Moradia"));
+    const ask = h.callsOf("sendMessage").find((c) => c.payload.chat_id === ADMIN_CHAT)!;
+    expect(String(ask.payload.text)).toContain("Moradia");
+    expect(buttons(ask)).toContain(`"callback_data":"proteger:${NEW_CHAT}"`);
+    expect(buttons(ask)).toContain(`"callback_data":"ignorar:${NEW_CHAT}"`);
+  });
+
+  it("admin toca em proteger: o grupo passa a ser protegido na hora", async () => {
+    const h = new Harness();
+    await h.update(botPromoted(NEW_CHAT, "Moradia"));
+    await h.update(joinRequestUpdate(USER, NEW_CHAT));
+    expect(await h.repo.listJoinRequestsForUser(USER)).toHaveLength(0);
+
+    await h.update(callbackQuery(ADMIN_ID, `proteger:${NEW_CHAT}`));
+    expect(String(h.callsOf("editMessageText").at(-1)!.payload.text)).toContain(
+      "agora é protegido",
+    );
+
+    await h.update(joinRequestUpdate(USER, NEW_CHAT));
+    expect(await h.repo.listJoinRequestsForUser(USER)).toHaveLength(1);
+    expect((await h.request(`${BASE_URL}/health`).then((r) => r.json())) as object).toMatchObject({
+      chats: 3,
+    });
+  });
+
+  it("quem não é admin não consegue proteger", async () => {
+    const h = new Harness();
+    await h.update(botPromoted(NEW_CHAT, "Moradia"));
+    await h.update(callbackQuery(USER, `proteger:${NEW_CHAT}`));
+    expect(h.callsOf("answerCallbackQuery").at(-1)!.payload).toMatchObject({ show_alert: true });
+    await h.update(joinRequestUpdate(USER, NEW_CHAT));
+    expect(await h.repo.listJoinRequestsForUser(USER)).toHaveLength(0);
+  });
+
+  it("/desproteger tira um grupo do env da lista", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, "/desproteger"));
+    expect(buttons(h.callsOf("sendMessage").at(-1))).toContain(`desproteger:${CHAT_B}`);
+
+    await h.update(callbackQuery(ADMIN_ID, `desproteger:${CHAT_B}`));
+    await h.update(joinRequestUpdate(USER, CHAT_B));
+    expect(await h.repo.listJoinRequestsForUser(USER)).toHaveLength(0);
+    await h.update(joinRequestUpdate(USER, CHAT_A));
+    expect(await h.repo.listJoinRequestsForUser(USER)).toHaveLength(1);
+  });
+
+  it("/proteger lista os grupos conhecidos sem proteção, mas nunca o chat de admins", async () => {
+    const h = new Harness();
+    await h.update(botPromoted(NEW_CHAT, "Moradia"));
+    await h.update(botPromoted(ADMIN_CHAT, "Admins"));
+    await h.update(privateCommand(ADMIN_ID, "/proteger"));
+    const list = buttons(h.callsOf("sendMessage").at(-1));
+    expect(list).toContain(`proteger:${NEW_CHAT}`);
+    expect(list).not.toContain(`proteger:${ADMIN_CHAT}`);
+    expect(list).not.toContain(`proteger:${CHAT_A}`);
+  });
+
+  it("o chat de admins não pode ser protegido nem por botão forjado", async () => {
+    const h = new Harness();
+    await h.update(callbackQuery(ADMIN_ID, `proteger:${ADMIN_CHAT}`));
+    expect(String(h.callsOf("editMessageText").at(-1)!.payload.text)).toContain("não pode");
+    await h.update(groupCommand(USER, ADMIN_CHAT, "/help"));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).not.toContain("porteiro");
   });
 });
 

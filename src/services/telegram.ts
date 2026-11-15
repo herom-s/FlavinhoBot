@@ -3,7 +3,7 @@
  */
 import { GrammyError, type Api } from "grammy";
 import { errorMessage, hashId, log } from "../logger";
-import type { Services } from "./context";
+import { protectedChatIds, type Services } from "./context";
 
 type SendOptions = Parameters<Api["sendMessage"]>[2];
 
@@ -61,7 +61,7 @@ export async function sendDm(
 /** Remove (sem banir) de todos os chats protegidos. `unbanChatMember` sem `only_if_banned` expulsa membros atuais. */
 export async function removeFromChats(s: Services, userId: number): Promise<number> {
   let removed = 0;
-  for (const chatId of s.config.protectedChatIds) {
+  for (const chatId of await protectedChatIds(s)) {
     try {
       await s.api.unbanChatMember(chatId, userId);
       removed++;

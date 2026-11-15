@@ -429,6 +429,31 @@ export class D1Repository implements Repository {
       .run();
   }
 
+  async listKnownChats() {
+    const { results } = await this.db
+      .prepare("SELECT chat_id, title FROM chats ORDER BY title")
+      .all<{ chat_id: number; title: string | null }>();
+    return results.map((r) => ({ chatId: r.chat_id, title: r.title }));
+  }
+
+  async listChatProtections() {
+    const { results } = await this.db
+      .prepare("SELECT chat_id, protected FROM protected_chats ORDER BY changed_at")
+      .all<{ chat_id: number; protected: number }>();
+    return results.map((r) => ({ chatId: r.chat_id, protected: r.protected === 1 }));
+  }
+
+  async setChatProtection(chatId: number, isProtected: boolean, by: number, at: string) {
+    await this.db
+      .prepare(
+        `INSERT INTO protected_chats (chat_id, protected, changed_by, changed_at) VALUES (?, ?, ?, ?)
+         ON CONFLICT (chat_id) DO UPDATE SET
+           protected = excluded.protected, changed_by = excluded.changed_by, changed_at = excluded.changed_at`,
+      )
+      .bind(chatId, isProtected ? 1 : 0, by, at)
+      .run();
+  }
+
   async getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>> {
     if (chatIds.length === 0) return new Map();
     const { results } = await this.db

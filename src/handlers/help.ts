@@ -41,7 +41,7 @@ export function registerHelp(bot: Bot, s: Services): void {
       );
       return;
     }
-    if (isProtectedChat(s, chat.id) && groupLimiter.allow(`${chat.id}:${ctx.from?.id}`)) {
+    if ((await isProtectedChat(s, chat.id)) && groupLimiter.allow(`${chat.id}:${ctx.from?.id}`)) {
       await sendDm(s.api, chat.id, help.grupo(username), {
         reply_parameters: { message_id: ctx.msgId, allow_sending_without_reply: true },
       });

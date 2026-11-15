@@ -8,7 +8,7 @@ import { GRANDFATHER_KEY } from "../handlers/commands.admin";
 import { errorMessage, hashId, log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
 import { refreshChatInfo } from "../services/access";
-import { eligibilityConfig, isAdmin, type Services } from "../services/context";
+import { eligibilityConfig, isAdmin, protectedChatIds, type Services } from "../services/context";
 import { notifyAdmins, removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
 const AUDIT_RETENTION_DAYS = 90;
@@ -91,7 +91,8 @@ export async function runDailyJobs(s: Services, subrequestBudget = 45): Promise<
     chatsRefreshed: 0,
     budgetLeft: 0,
   };
-  const chatsCount = s.config.protectedChatIds.length;
+  const chatIdsNow = await protectedChatIds(s);
+  const chatsCount = chatIdsNow.length;
 
   // 0. Limpeza (só D1, não gasta subrequest externo).
   await s.repo.purgeOAuthStates(nowIso);
@@ -177,7 +178,7 @@ export async function runDailyJobs(s: Services, subrequestBudget = 45): Promise<
 
   // 4. Atualiza título e descrição dos grupos com o orçamento que sobrou (o Telegram não avisa
   // quando a descrição muda). O que não couber hoje fica para amanhã.
-  const toRefresh = s.config.protectedChatIds.slice(0, Math.max(0, budget.left));
+  const toRefresh = chatIdsNow.slice(0, Math.max(0, budget.left));
   budget.take(toRefresh.length);
   report.chatsRefreshed = await refreshChatInfo(s, toRefresh);
 

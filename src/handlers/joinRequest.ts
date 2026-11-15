@@ -10,7 +10,7 @@ export function registerJoinRequest(bot: Bot, s: Services): void {
     const req = ctx.chatJoinRequest;
     const chatId = req.chat.id;
     const user = req.from;
-    if (!isProtectedChat(s, chatId)) return;
+    if (!(await isProtectedChat(s, chatId))) return;
 
     const nowIso = s.now().toISOString();
     await s.repo.upsertChat(chatId, "title" in req.chat ? req.chat.title : null, nowIso);

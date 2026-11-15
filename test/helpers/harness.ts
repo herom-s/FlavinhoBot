@@ -244,6 +244,36 @@ export const groupCommand = (userId: number, chatId: number, text: string) => {
   };
 };
 
+/** O bot virou admin (ou deixou de ser) num grupo. */
+export const botPromoted = (chatId: number, title: string, promoted = true) => {
+  const member = { user: botInfo, status: "member" };
+  const admin = {
+    user: botInfo,
+    status: "administrator",
+    can_be_edited: false,
+    is_anonymous: false,
+    can_manage_chat: true,
+    can_delete_messages: true,
+    can_manage_video_chats: true,
+    can_restrict_members: true,
+    can_promote_members: false,
+    can_change_info: false,
+    can_invite_users: true,
+    can_post_stories: false,
+    can_edit_stories: false,
+    can_delete_stories: false,
+  };
+  return {
+    my_chat_member: {
+      chat: { id: chatId, type: "supergroup", title },
+      from: tgUser(ADMIN_ID),
+      date: 0,
+      old_chat_member: promoted ? member : admin,
+      new_chat_member: promoted ? admin : member,
+    },
+  };
+};
+
 export const callbackQuery = (userId: number, data: string) => ({
   callback_query: {
     id: "cb1",

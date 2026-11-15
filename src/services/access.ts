@@ -14,7 +14,7 @@ import {
 } from "../domain/eligibility";
 import { hashId, log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
-import { eligibilityConfig, type Services } from "./context";
+import { eligibilityConfig, protectedChatIds, type Services } from "./context";
 import { notifyAdmins, safeApprove, safeDecline, sendDm } from "./telegram";
 
 export const INVITE_TTL_MINUTES = 15;
@@ -101,9 +101,8 @@ export async function completeVerification(
     }
   }
 
-  const pending = new Set<number>(
-    state.chatIds.filter((id) => s.config.protectedChatIds.includes(id)),
-  );
+  const protectedIds = await protectedChatIds(s);
+  const pending = new Set<number>(state.chatIds.filter((id) => protectedIds.includes(id)));
   for (const r of await s.repo.listJoinRequestsForUser(telegramId)) pending.add(r.chatId);
 
   if (result.status === "NEGAR") {
@@ -220,7 +219,7 @@ export function groupLines(
 
 /** Gera um convite de uso único (15 min) para cada chat protegido e manda no privado. */
 export async function sendInvites(s: Services, telegramId: number): Promise<void> {
-  const chatIds = s.config.protectedChatIds;
+  const chatIds = await protectedChatIds(s);
   if (chatIds.length === 0) {
     await sendDm(s.api, telegramId, msg.semChatsProtegidos);
     return;

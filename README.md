@@ -93,19 +93,21 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 
 **Para admins** (só no privado ou no chat de admins; para os outros, o bot não responde)
 
-| Comando                   | O que faz                                                |
-| ------------------------- | -------------------------------------------------------- |
-| `/help`                   | lista os comandos de admin                               |
-| `/stats`                  | membros por status, pedidos pendentes, negados em 7 dias |
-| `/quem <@user \| login>`  | situação de um membro                                    |
-| `/allow <login> <motivo>` | libera um caso especial                                  |
-| `/deny <login> <motivo>`  | bloqueia e remove dos grupos                             |
-| `/reverificar <login>`    | revalida agora na Intra                                  |
-| `/pendentes`              | pedidos de entrada esperando verificação                 |
-| `/sincronizar`            | confere se o bot tem as permissões certas em cada grupo  |
-| `/nao_verificados`        | quem foi visto nos grupos e ainda não verificou          |
-| `/avisar`                 | fixa nos grupos o aviso para membros antigos verificarem |
-| `/chatid`                 | mostra o ID do chat (útil no setup)                      |
+| Comando                   | O que faz                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `/help`                   | lista os comandos de admin                                                      |
+| `/stats`                  | membros por status, pedidos pendentes, negados em 7 dias                        |
+| `/quem <@user \| login>`  | situação de um membro                                                           |
+| `/allow <login> <motivo>` | libera um caso especial                                                         |
+| `/deny <login> <motivo>`  | bloqueia e remove dos grupos                                                    |
+| `/reverificar <login>`    | revalida agora na Intra                                                         |
+| `/pendentes`              | pedidos de entrada esperando verificação                                        |
+| `/sincronizar`            | confere se o bot tem as permissões certas em cada grupo                         |
+| `/proteger`               | protege um grupo onde o bot é admin (também por botão, quando o bot vira admin) |
+| `/desproteger`            | deixa de proteger um grupo                                                      |
+| `/nao_verificados`        | quem foi visto nos grupos e ainda não verificou                                 |
+| `/avisar`                 | fixa nos grupos o aviso para membros antigos verificarem                        |
+| `/chatid`                 | mostra o ID do chat (útil no setup)                                             |
 
 No chat de admins, o @ do bot nos comandos é opcional: `/stats` e `/stats@<bot>` funcionam igual. Quem não está em `ADMIN_IDS` e manda `/help` ali recebe o próprio ID, para ser incluído.
 

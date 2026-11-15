@@ -9,6 +9,7 @@ import { registerUserCommands } from "./handlers/commands.user";
 import { registerChatMember } from "./handlers/chatMember";
 import { registerHelp } from "./handlers/help";
 import { registerJoinRequest } from "./handlers/joinRequest";
+import { registerProtection } from "./handlers/protection";
 import type { Services } from "./services/context";
 import { reportError } from "./services/telegram";
 
@@ -53,6 +54,7 @@ export function createApp(opts: AppOptions): App {
   registerChatMember(bot, services); // primeiro: só observa e chama next()
   registerJoinRequest(bot, services);
   registerHelp(bot, services);
+  registerProtection(bot, services);
   registerAdminCommands(bot, services);
   registerUserCommands(bot, services);
 

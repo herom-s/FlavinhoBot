@@ -32,6 +32,8 @@ export const ADMIN_COMMANDS: CommandInfo[] = [
     command: "sincronizar",
     description: "Confere permissões e atualiza nome e descrição dos grupos",
   },
+  { command: "proteger", description: "Proteger um grupo onde o bot é admin" },
+  { command: "desproteger", description: "Deixar de proteger um grupo" },
   { command: "nao_verificados", description: "Quem foi visto nos grupos e não verificou" },
   { command: "avisar", description: "Fixa nos grupos o aviso para membros antigos verificarem" },
   { command: "chatid", description: "Mostra o ID do chat atual" },

@@ -110,16 +110,17 @@ Quem deixa de ser elegível recebe `revoked_reason` e para de ser aprovado diret
 
 As migrations ficam em [`migrations/`](../migrations) e são aplicadas com `wrangler d1 migrations apply`.
 
-| Tabela          | Conteúdo                                                                                                  |
-| --------------- | --------------------------------------------------------------------------------------------------------- |
-| `members`       | um registro por Telegram verificado. `intra_id` é `UNIQUE`. `revoked_reason` nulo significa acesso válido |
-| `join_requests` | pedidos de entrada esperando verificação                                                                  |
-| `overrides`     | allowlist e denylist por login da Intra                                                                   |
-| `audit_log`     | eventos (`verified`, `denied`, `approved`, `removed`...) sem dados sensíveis                              |
-| `oauth_states`  | hash SHA-256 do `state`, dono e expiração                                                                 |
-| `seen_members`  | quem falou ou entrou nos grupos protegidos                                                                |
-| `chats`         | título e descrição dos grupos, copiados do Telegram. Usados pelo `/grupos` e pela mensagem de convites    |
-| `settings`      | configurações de runtime, como o prazo do `/avisar`                                                       |
+| Tabela            | Conteúdo                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `members`         | um registro por Telegram verificado. `intra_id` é `UNIQUE`. `revoked_reason` nulo significa acesso válido |
+| `join_requests`   | pedidos de entrada esperando verificação                                                                  |
+| `overrides`       | allowlist e denylist por login da Intra                                                                   |
+| `audit_log`       | eventos (`verified`, `denied`, `approved`, `removed`...) sem dados sensíveis                              |
+| `oauth_states`    | hash SHA-256 do `state`, dono e expiração                                                                 |
+| `seen_members`    | quem falou ou entrou nos grupos protegidos                                                                |
+| `chats`           | título e descrição dos grupos, copiados do Telegram. Usados pelo `/grupos` e pela mensagem de convites    |
+| `protected_chats` | grupos protegidos ou desprotegidos pelos admins no Telegram. Vale por cima do `PROTECTED_CHAT_IDS`        |
+| `settings`        | configurações de runtime, como o prazo do `/avisar`                                                       |
 
 A `0001_init.sql` é o esquema da spec. A `0002_operational.sql` adiciona o que os fluxos precisaram.
 
@@ -154,6 +155,8 @@ Para trocar de banco (Postgres no Supabase ou Neon, por exemplo), implemente a i
 **`revoked_reason` em `members`.** Com `AUTO_REMOVE=false`, quem perde o acesso continua no grupo até um admin agir. Sem uma marca no registro, essa pessoa seria aprovada direto no próximo pedido.
 
 **Convites num botão separado.** Gerar convites para 19 grupos custa 19 chamadas. Fazer isso num update próprio mantém o callback do OAuth longe do limite de subrequests.
+
+**Proteção de grupos pelo Telegram.** A lista efetiva de grupos protegidos é `PROTECTED_CHAT_IDS` + os protegidos pelos admins − os desprotegidos pelos admins (tabela `protected_chats`). Assim um admin protege um grupo novo com um botão, sem acesso ao GitHub. Cada isolate guarda a lista em cache por até 1 minuto, então uma mudança leva no máximo isso para valer em todo lugar.
 
 **Comando `/avisar`.** A spec pede um aviso fixado para membros antigos com prazo, mas não listava um comando para isso.
 

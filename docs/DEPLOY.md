@@ -138,15 +138,21 @@ Faça isso em **cada** grupo que o bot vai proteger:
 
 ## 7. Proteger os grupos
 
-Quando vira admin num grupo novo, o bot avisa no `ADMIN_CHAT_ID`:
+Quando vira admin num grupo novo, o bot pergunta no chat de admins:
 
-> Fui adicionado ao chat X (id Y). Incluir em PROTECTED_CHAT_IDS?
+> 🆕 Fui adicionado como admin ao chat **X** (id Y). Quer que eu proteja este grupo?
+> [✅ Proteger este grupo] [Ignorar]
 
-Você também pode mandar `/chatid` dentro do grupo (só funciona para admins).
+Qualquer admin do bot (`ADMIN_IDS`) toca em **Proteger este grupo** e pronto: a partir daí só entra quem tem o cordão. Não precisa mexer no GitHub nem fazer deploy.
 
-Coloque os IDs na variável `PROTECTED_CHAT_IDS` do environment `production`, separados por vírgula (exemplo: `-1001234567890,-1009876543210`), e rode **Actions → Deploy → Run workflow**.
+Outros jeitos, também pelo Telegram:
 
-Para proteger um grupo novo no futuro é só repetir os passos 6 e 7, sem mexer no código.
+- `/proteger`: lista os grupos onde o bot já é admin e que ainda não são protegidos, com um botão para cada.
+- `/desproteger`: lista os grupos protegidos, com um botão para deixar de proteger.
+
+A variável `PROTECTED_CHAT_IDS` do GitHub continua valendo como lista inicial. O que os admins mudam pelo Telegram vale por cima dela: um grupo protegido pelo botão entra na lista, e um grupo desprotegido sai, mesmo que esteja na variável. O chat de admins nunca pode ser protegido.
+
+Para proteger um grupo novo no futuro é só repetir os passos 6 e 7.
 
 ## 8. Descrever cada grupo
 

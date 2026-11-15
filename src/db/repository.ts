@@ -120,6 +120,11 @@ export interface Repository {
   upsertChat(chatId: number, title: string | null, at: string): Promise<void>;
   getChatTitles(chatIds: number[]): Promise<Map<number, string>>;
   setChatDescription(chatId: number, description: string | null, at: string): Promise<void>;
+  /** Todos os grupos que o bot conhece (onde já esteve), com título. */
+  listKnownChats(): Promise<{ chatId: number; title: string | null }[]>;
+  /** Proteções definidas pelos admins no Telegram (vencem o PROTECTED_CHAT_IDS do env). */
+  listChatProtections(): Promise<{ chatId: number; protected: boolean }[]>;
+  setChatProtection(chatId: number, isProtected: boolean, by: number, at: string): Promise<void>;
   getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>>;
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;

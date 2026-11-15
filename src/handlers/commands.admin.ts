@@ -3,7 +3,7 @@ import type { MemberRecord } from "../db/repository";
 import type { DenyReason } from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
-import { isAdmin, type Services } from "../services/context";
+import { isAdmin, protectedChatIds, type Services } from "../services/context";
 import { removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
 export const GRANDFATHER_KEY = "grandfather_deadline";
@@ -130,7 +130,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
         { telegramId: member.telegramId, intraLogin: login, detail: "denylist" },
         nowIso,
       );
-      detail = `Removido de ${removed}/${s.config.protectedChatIds.length} chat(s).`;
+      detail = `Removido de ${removed}/${(await protectedChatIds(s)).length} chat(s).`;
     }
     await reply(ctx, `⛔ <b>${escapeHtml(login)}</b> na denylist. ${detail}`);
   };
@@ -167,8 +167,10 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
   });
 
   admin.command("sincronizar", async (ctx) => {
-    const ids = s.config.protectedChatIds;
-    if (ids.length === 0) return void (await reply(ctx, "PROTECTED_CHAT_IDS está vazio."));
+    const ids = await protectedChatIds(s);
+    if (ids.length === 0) {
+      return void (await reply(ctx, "Nenhum grupo protegido ainda. Use /proteger."));
+    }
     const nowIso = s.now().toISOString();
     const lines: string[] = [];
     for (const chatId of ids) {
@@ -222,7 +224,8 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
     const deadline = new Date(s.now().getTime() + s.config.grandfatherDays * 86_400_000);
     await s.repo.setSetting(GRANDFATHER_KEY, deadline.toISOString());
     let ok = 0;
-    for (const chatId of s.config.protectedChatIds) {
+    const chatIds = await protectedChatIds(s);
+    for (const chatId of chatIds) {
       try {
         const sent = await s.api.sendMessage(
           chatId,
@@ -239,7 +242,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
     }
     await reply(
       ctx,
-      `📌 Aviso enviado em ${ok}/${s.config.protectedChatIds.length} chat(s). Prazo: ${fmt(deadline.toISOString())}.`,
+      `📌 Aviso enviado em ${ok}/${chatIds.length} chat(s). Prazo: ${fmt(deadline.toISOString())}.`,
     );
   });
 }

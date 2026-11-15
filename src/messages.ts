@@ -95,6 +95,29 @@ export const msg = {
     "Você ainda não pegou o cordão, jovem 👀 Manda /start pra verificar pela Intra.",
   links: "Links úteis da comunidade 👇",
   grupos: "Os grupos da 42 Comunidade 👇",
+
+  // ---------- proteção de grupos (admins) ----------
+  novoChat: (title: string, chatId: number) =>
+    `🆕 Fui adicionado como admin ao chat <b>${escapeHtml(title)}</b> (id <code>${chatId}</code>). ` +
+    "Quer que eu proteja este grupo? A partir daí, só entra quem tem o cordão.",
+  botaoProteger: "✅ Proteger este grupo",
+  botaoIgnorar: "Ignorar",
+  protegido: (title: string, by: string) =>
+    `✅ <b>${escapeHtml(title)}</b> agora é protegido (por ${escapeHtml(by)}).\n` +
+    "Confira: grupo privado, link de convite com aprovação de admin, sem links antigos de entrada direta. " +
+    "Depois rode /sincronizar.",
+  desprotegido: (title: string, by: string) =>
+    `🔓 <b>${escapeHtml(title)}</b> não é mais protegido (por ${escapeHtml(by)}). ` +
+    "Eu paro de controlar a entrada lá; quem já está no grupo continua.",
+  ignorado: (title: string, by: string) =>
+    `Ok, não vou proteger <b>${escapeHtml(title)}</b> (${escapeHtml(by)}). Se mudar de ideia: /proteger`,
+  naoProtegerAdmin: "O chat de admins não pode ser protegido: é onde ficam os alertas e comandos.",
+  soAdmins: "Só admins do bot podem fazer isso.",
+  escolhaProteger: "Qual grupo eu devo proteger? (só aparecem grupos onde já estou)",
+  escolhaDesproteger: "Qual grupo eu devo deixar de proteger?",
+  nenhumParaProteger:
+    "Não conheço nenhum grupo sem proteção. Me adicione como admin no grupo e eu aviso aqui.",
+  nenhumProtegido: "Nenhum grupo protegido no momento.",
   semDescricao: "<i>(sem descrição ainda)</i>",
   gruposVerificado: "Quer entrar? Toca no botão que eu gero seus convites 🎟️",
   gruposNaoVerificado: "Pra entrar, primeiro pega o cordão: manda /start 😉",

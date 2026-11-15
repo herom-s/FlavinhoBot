@@ -11,7 +11,7 @@ import {
   sendInvites,
   startVerification,
 } from "../services/access";
-import type { Services } from "../services/context";
+import { protectedChatIds, type Services } from "../services/context";
 import { removeFromChats, sendDm } from "../services/telegram";
 
 const CB_DELETE_YES = "apagar:sim";
@@ -61,7 +61,7 @@ export function registerUserCommands(bot: Bot, s: Services): void {
   });
 
   priv.command("grupos", async (ctx) => {
-    const chatIds = s.config.protectedChatIds;
+    const chatIds = await protectedChatIds(s);
     if (chatIds.length === 0)
       return void (await sendDm(s.api, ctx.chat.id, msg.semChatsProtegidos));
     const lines = groupLines(chatIds, await s.repo.getChatInfo(chatIds));
