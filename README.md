@@ -101,6 +101,7 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/allow <login> <motivo>` | libera um caso especial                                                                       |
 | `/deny <login> <motivo>`  | bloqueia e remove dos grupos                                                                  |
 | `/reverificar <login>`    | revalida agora na Intra                                                                       |
+| `/intra <login>`          | mostra o que a Intra diz de um login e o que o bot decidiria (diagnóstico, não grava nada)    |
 | `/pendentes`              | pedidos de entrada esperando verificação                                                      |
 | `/sincronizar`            | confere se o bot tem as permissões certas em cada grupo                                       |
 | `/proteger`               | protege um grupo onde o bot é admin (também por botão, quando o bot vira admin)               |
