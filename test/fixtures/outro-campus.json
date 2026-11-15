@@ -1,0 +1,17 @@
+{
+  "id": 100006,
+  "login": "parisien",
+  "alumni?": false,
+  "active?": true,
+  "staff?": false,
+  "cursus_users": [
+    {
+      "cursus_id": 21,
+      "begin_at": "2024-03-04T11:00:00.000Z",
+      "end_date": null,
+      "blackholed_at": "2027-06-01T11:00:00.000Z",
+      "grade": "Learner"
+    }
+  ],
+  "campus_users": [{ "campus_id": 1, "is_primary": true }]
+}

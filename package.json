@@ -1,0 +1,36 @@
+{
+  "name": "flavinhobot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FlavinhoBot — gateway da 42 Comunidade (Telegram) com verificação pela Intra 42",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate:local": "wrangler d1 migrations apply flavinhobot --local",
+    "db:migrate:remote": "wrangler d1 migrations apply flavinhobot --remote",
+    "set-webhook": "bun scripts/set-webhook.ts"
+  },
+  "dependencies": {
+    "grammy": "^1.46.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261115.1",
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "^1.4.4",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^10.15.0",
+    "prettier": "^3.10.1",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.162.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": 100007,
+  "login": "bocal",
+  "alumni?": false,
+  "active?": true,
+  "staff?": true,
+  "cursus_users": [],
+  "campus_users": [{ "campus_id": 20, "is_primary": true }]
+}

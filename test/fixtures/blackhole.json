@@ -1,0 +1,17 @@
+{
+  "id": 100004,
+  "login": "blackhole",
+  "alumni?": false,
+  "active?": true,
+  "staff?": false,
+  "cursus_users": [
+    {
+      "cursus_id": 21,
+      "begin_at": "2023-03-06T11:00:00.000Z",
+      "end_date": null,
+      "blackholed_at": "2025-09-01T11:00:00.000Z",
+      "grade": "Learner"
+    }
+  ],
+  "campus_users": [{ "campus_id": 20, "is_primary": true }]
+}

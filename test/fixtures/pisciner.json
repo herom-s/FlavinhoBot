@@ -1,0 +1,17 @@
+{
+  "id": 100003,
+  "login": "pisciner",
+  "alumni?": false,
+  "active?": true,
+  "staff?": false,
+  "cursus_users": [
+    {
+      "cursus_id": 9,
+      "begin_at": "2026-11-03T11:00:00.000Z",
+      "end_date": "2026-11-28T11:00:00.000Z",
+      "blackholed_at": null,
+      "grade": null
+    }
+  ],
+  "campus_users": [{ "campus_id": 20, "is_primary": true }]
+}

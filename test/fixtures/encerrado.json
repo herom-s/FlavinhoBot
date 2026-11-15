@@ -1,0 +1,17 @@
+{
+  "id": 100009,
+  "login": "encerrado",
+  "alumni?": false,
+  "active?": true,
+  "staff?": false,
+  "cursus_users": [
+    {
+      "cursus_id": 21,
+      "begin_at": "2021-03-01T11:00:00.000Z",
+      "end_date": "2026-01-15T11:00:00.000Z",
+      "blackholed_at": null,
+      "grade": "Learner"
+    }
+  ],
+  "campus_users": [{ "campus_id": 20, "is_primary": true }]
+}

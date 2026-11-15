@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env
+coverage/
+*.Zone.Identifier
+
+# Spec local (não versionado)
+flavinhobot-spec.md
+*:Zone.Identifier
