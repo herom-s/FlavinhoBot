@@ -61,7 +61,7 @@ O algoritmo da spec está em [`src/domain/eligibility.ts`](../src/domain/eligibi
 3. Alumni → libera (`alumni`)
 4. Sem o 42cursus (`cursus_id` 21) → nega (`pisciner_ou_sem_cursus`)
 5. 42cursus ainda não começou → nega (`cursus_nao_iniciado`)
-6. Blackhole vencido → nega (`blackhole`)
+6. Blackhole vencido **e conta inativa** → nega (`blackhole`). Com a conta ativa, segue: é o caso de quem está em freeze, quando a Intra mantém a data antiga do blackhole
 7. Cursus encerrado → nega (`cursus_encerrado`)
 8. Conta inativa → nega (`conta_inativa`)
 9. Caso contrário → libera (`cadete_ativo`)
@@ -162,6 +162,8 @@ Para trocar de banco (Postgres no Supabase ou Neon, por exemplo), implemente a i
 **Admins pelo Telegram.** A lista efetiva de admins é `ADMIN_IDS` (donos fixos) + os ativos em `bot_admins`. Donos nunca podem ser removidos pelo Telegram, então sempre sobra alguém com acesso. Mesmo cache de 1 minuto da lista de grupos.
 
 **Contagem por grupo no `/stats`.** A Bot API não lista membros, só o total (`getChatMemberCount`). "Com cordão" são os membros verificados que o bot sabe que estão no grupo: quem entrou ou falou depois da chegada do bot, e quem verificou pelo `/start` (no fim da verificação o bot consulta `getChatMember` em cada grupo protegido). O resto do total aparece como "sem cordão".
+
+**Freeze e blackhole.** A spec negava qualquer `blackholed_at` vencido. Na prática, quem está em freeze tem a data de blackhole vencida e a conta **ativa**; quem caiu no blackhole tem a conta **inativa** (comparamos uma conta de cada pelo `/intra`). Por isso o passo 6 exige as duas coisas. Se a Intra demorar para desativar a conta de alguém recém-caído, a revalidação diária pega depois.
 
 **Comando `/avisar`.** A spec pede um aviso fixado para membros antigos com prazo, mas não listava um comando para isso.
 

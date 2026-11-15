@@ -85,8 +85,11 @@ export function avaliarElegibilidade(
     return negar("cursus_nao_iniciado");
   }
 
-  // 6. blackhole
-  if (jaPassou(cursus42.blackholed_at, agora)) return negar("blackhole");
+  // 6. blackhole. A data sozinha não basta: em freeze a Intra mantém o blackholed_at antigo (já
+  // vencido) com a conta ativa. Quem realmente caiu no blackhole tem a conta desativada.
+  if (jaPassou(cursus42.blackholed_at, agora) && user["active?"] === false) {
+    return negar("blackhole");
+  }
 
   // 7. cursus encerrado ("e não é alumni" já está garantido: alumni retornou no passo 3)
   if (jaPassou(cursus42.end_date, agora)) return negar("cursus_encerrado");

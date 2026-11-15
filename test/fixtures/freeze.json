@@ -1,0 +1,29 @@
+{
+  "id": 100010,
+  "login": "freeze",
+  "alumni?": false,
+  "active?": true,
+  "staff?": false,
+  "cursus_users": [
+    {
+      "cursus_id": 9,
+      "begin_at": "2024-07-08T12:30:00.000Z",
+      "end_date": null,
+      "blackholed_at": null,
+      "grade": "Pisciner"
+    },
+    {
+      "cursus_id": 21,
+      "begin_at": "2024-10-14T12:00:00.000Z",
+      "end_date": null,
+      "blackholed_at": "2026-10-09T12:00:00.000Z",
+      "grade": "Cadet"
+    }
+  ],
+  "campus_users": [
+    {
+      "campus_id": 20,
+      "is_primary": true
+    }
+  ]
+}

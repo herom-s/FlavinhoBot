@@ -2,7 +2,7 @@
   "id": 100004,
   "login": "blackhole",
   "alumni?": false,
-  "active?": true,
+  "active?": false,
   "staff?": false,
   "cursus_users": [
     {
@@ -13,5 +13,10 @@
       "grade": "Learner"
     }
   ],
-  "campus_users": [{ "campus_id": 20, "is_primary": true }]
+  "campus_users": [
+    {
+      "campus_id": 20,
+      "is_primary": true
+    }
+  ]
 }

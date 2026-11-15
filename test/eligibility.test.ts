@@ -11,6 +11,7 @@ import blackhole from "./fixtures/blackhole.json";
 import cadete from "./fixtures/cadete.json";
 import cursusFuturo from "./fixtures/cursus-futuro.json";
 import encerrado from "./fixtures/encerrado.json";
+import freeze from "./fixtures/freeze.json";
 import inativo from "./fixtures/inativo.json";
 import outroCampus from "./fixtures/outro-campus.json";
 import pisciner from "./fixtures/pisciner.json";
@@ -95,8 +96,16 @@ describe("avaliarElegibilidade", () => {
     });
   });
 
+  it("6. freeze: blackhole vencido com conta ativa continua cadete", () => {
+    expect(avaliarElegibilidade(u(freeze), AGORA, config)).toEqual({
+      status: "PERMITIR",
+      motivo: "cadete_ativo",
+    });
+  });
+
   it("6. blackhole exatamente agora conta como vencido", () => {
     const user = u(cadete);
+    user["active?"] = false;
     user.cursus_users![1]!.blackholed_at = AGORA.toISOString();
     expect(avaliarElegibilidade(user, AGORA, config).motivo).toBe("blackhole");
   });

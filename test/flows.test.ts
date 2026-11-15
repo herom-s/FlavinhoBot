@@ -530,7 +530,7 @@ describe("/intra", () => {
     expect(text).toContain("❌ Não entra: blackhole");
     expect(text).toContain("<b>42cursus</b>");
     expect(text).toContain("⚫ blackhole 01/09/2025 (já passou há");
-    expect(text).toContain("<b>Conta</b>: ativa");
+    expect(text).toContain("<b>Conta</b>: inativa");
     expect(text).not.toContain("Sem a liberação manual");
     expect(await h.repo.getMember(USER)).toBeNull();
   });
