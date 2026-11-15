@@ -237,7 +237,7 @@ const truncate = (text: string, max: number): string =>
 export function groupLines(
   chatIds: number[],
   info: Map<number, ChatInfo>,
-  maxDescription = 255,
+  maxDescription = 3000,
 ): string[] {
   return chatIds.map((chatId) => {
     const chat = info.get(chatId);

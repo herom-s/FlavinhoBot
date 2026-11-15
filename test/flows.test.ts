@@ -276,6 +276,14 @@ describe("descrição dos grupos", () => {
     expect(reply.payload.reply_markup).toBeUndefined();
   });
 
+  it("/grupos mostra a descrição inteira, mesmo longa (regras de um grupo, por exemplo)", async () => {
+    const h = new Harness();
+    const longa = `‼️ COMUNICADO ‼️\n\n${"Regra importante do grupo. ".repeat(25)}FIM-DAS-REGRAS`;
+    await h.repo.setChatDescription(CHAT_A, longa, h.clock.toISOString());
+    await h.update(privateCommand(USER, "/grupos"));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("FIM-DAS-REGRAS");
+  });
+
   it("grupo sem descrição aparece como tal, e verificado ganha o botão de convites", async () => {
     const h = new Harness();
     h.me = clone(cadete);
