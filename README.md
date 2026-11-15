@@ -106,6 +106,7 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/sincronizar`            | confere se o bot tem as permissões certas em cada grupo                                       |
 | `/proteger`               | protege um grupo onde o bot é admin (também por botão, quando o bot vira admin)               |
 | `/desproteger`            | deixa de proteger um grupo                                                                    |
+| `/descricao <texto>`      | dentro do grupo, define a descrição que aparece no `/grupos`                                  |
 | `/nao_verificados`        | quem foi visto nos grupos e ainda não verificou                                               |
 | `/avisar`                 | fixa nos grupos o aviso para membros antigos verificarem                                      |
 | `/admins`                 | lista donos e admins do bot                                                                   |

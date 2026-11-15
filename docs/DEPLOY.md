@@ -166,11 +166,15 @@ Donos não podem ser removidos pelo Telegram, para ninguém trancar o bot por en
 
 ## 8. Descrever cada grupo
 
-O bot explica os grupos para os membros com o `/grupos` e na mensagem de convites. O texto vem da **descrição do próprio grupo no Telegram**: em cada grupo, vá em **Editar → Descrição** e escreva do que ele trata (até 255 caracteres). Exemplo para Eventos:
+O bot explica os grupos para os membros com o `/grupos` e na mensagem de convites. Para definir o texto, um admin manda **dentro do grupo**:
 
-> Divulgação de eventos da 42 SP e da comunidade: palestras, hackathons, encontros. Avisos importantes ficam fixados.
+```
+/descricao Divulgação de eventos da 42 SP e da comunidade: palestras, hackathons, encontros.
+```
 
-Depois de editar, mande `/sincronizar` para o bot atualizar na hora. Se esquecer, ele atualiza sozinho no cron diário.
+O bot apaga o comando do grupo e confirma no privado. Pode ter várias linhas e links. `/descricao` sozinho mostra a atual, e `/descricao apagar` remove.
+
+Por que não usar a descrição do próprio Telegram? A Bot API não devolve a descrição de grupos que fazem parte de uma **Comunidade** do Telegram (como a 42 Comunidade). Para grupos fora de uma Comunidade, a descrição do Telegram é usada automaticamente quando não há uma definida com `/descricao`.
 
 ## 9. Conferir as permissões
 

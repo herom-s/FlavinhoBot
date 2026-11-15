@@ -508,11 +508,23 @@ export class D1Repository implements Repository {
     return row?.telegram_id ?? null;
   }
 
+  async setCustomDescription(chatId: number, description: string | null, at: string) {
+    await this.db
+      .prepare(
+        `INSERT INTO chats (chat_id, title, custom_description, updated_at) VALUES (?, NULL, ?, ?)
+         ON CONFLICT (chat_id) DO UPDATE SET
+           custom_description = excluded.custom_description, updated_at = excluded.updated_at`,
+      )
+      .bind(chatId, description, at)
+      .run();
+  }
+
   async getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>> {
     if (chatIds.length === 0) return new Map();
     const { results } = await this.db
       .prepare(
-        `SELECT chat_id, title, description FROM chats WHERE chat_id IN (${chatIds.map(() => "?").join(",")})`,
+        `SELECT chat_id, title, COALESCE(custom_description, description) AS description
+         FROM chats WHERE chat_id IN (${chatIds.map(() => "?").join(",")})`,
       )
       .bind(...chatIds)
       .all<{ chat_id: number; title: string | null; description: string | null }>();

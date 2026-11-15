@@ -39,6 +39,11 @@ export const ADMIN_COMMANDS: CommandInfo[] = [
   },
   { command: "proteger", description: "Proteger um grupo onde o bot é admin" },
   { command: "desproteger", description: "Deixar de proteger um grupo" },
+  {
+    command: "descricao",
+    description: "Define a descrição do grupo no /grupos (mande dentro do grupo)",
+    usage: "<texto | apagar>",
+  },
   { command: "nao_verificados", description: "Quem foi visto nos grupos e não verificou" },
   { command: "avisar", description: "Fixa nos grupos o aviso para membros antigos verificarem" },
   { command: "admins", description: "Lista os admins do bot" },

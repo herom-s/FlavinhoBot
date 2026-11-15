@@ -9,7 +9,6 @@ import {
   type IntraUser,
 } from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
-import { log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
 import {
   adminIds,
@@ -32,6 +31,7 @@ const userLink = (id: number, username: string | null) =>
   username ? `@${escapeHtml(username)}` : `<a href="tg://user?id=${id}">${id}</a>`;
 
 const LOGIN_RE = /^[a-z0-9_-]{1,32}$/i;
+const DESCRIPTION_MAX = 3000;
 
 function args(ctx: Context): string[] {
   const m = typeof ctx.match === "string" ? ctx.match : "";
@@ -320,12 +320,6 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
     for (const chatId of ids) {
       try {
         const chat = await s.api.getChat(chatId);
-        log.info("sync_chat", {
-          chat_id: chatId,
-          type: chat.type,
-          description_len: chat.description?.length ?? 0,
-          keys: Object.keys(chat).sort().join(","),
-        });
         const title = "title" in chat && chat.title ? chat.title : String(chatId);
         await s.repo.upsertChat(chatId, title, nowIso);
         await s.repo.setChatDescription(chatId, chat.description?.trim() || null, nowIso);
@@ -341,7 +335,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
         lines.push(
           missing.length
             ? `⚠️ ${escapeHtml(title)} (<code>${chatId}</code>): falta ${missing.join(", ")}${pub}${extra}`
-            : `✅ ${escapeHtml(title)} (<code>${chatId}</code>)${pub}${extra}${chat.description ? "" : " · sem descrição"}`,
+            : `✅ ${escapeHtml(title)} (<code>${chatId}</code>)${pub}${extra}${(await s.repo.getChatInfo([chatId])).get(chatId)?.description ? "" : " · sem descrição (use /descricao no grupo)"}`,
         );
       } catch (err) {
         lines.push(
@@ -350,6 +344,30 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
       }
     }
     await reply(ctx, `🔄 <b>Chats protegidos</b>\n${lines.join("\n")}`);
+  });
+
+  // /descricao <texto>, dentro do grupo: a Bot API não devolve a descrição de grupos de Comunidades.
+  admin.command("descricao", async (ctx) => {
+    const chat = ctx.chat;
+    if (chat.type === "private" || chat.id === s.config.adminChatId) {
+      return void (await reply(ctx, msg.descricaoUso));
+    }
+    const title = chat.title;
+    const text = (typeof ctx.match === "string" ? ctx.match : "").trim();
+    const nowIso = s.now().toISOString();
+    if (!text) {
+      const current = (await s.repo.getChatInfo([chat.id])).get(chat.id)?.description ?? null;
+      return void (await reply(ctx, msg.descricaoAtual(title, current)));
+    }
+    if (text.toLowerCase() === "apagar") {
+      await s.repo.setCustomDescription(chat.id, null, nowIso);
+      return void (await reply(ctx, msg.descricaoRemovida(title)));
+    }
+    if (text.length > DESCRIPTION_MAX)
+      return void (await reply(ctx, msg.descricaoLonga(DESCRIPTION_MAX)));
+    await s.repo.upsertChat(chat.id, title, nowIso);
+    await s.repo.setCustomDescription(chat.id, text, nowIso);
+    await reply(ctx, msg.descricaoSalva(title, text));
   });
 
   admin.command("nao_verificados", async (ctx) => {

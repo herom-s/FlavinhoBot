@@ -284,6 +284,36 @@ describe("descrição dos grupos", () => {
     expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("FIM-DAS-REGRAS");
   });
 
+  it("/descricao no grupo: apaga o comando, salva, e vale por cima da do Telegram", async () => {
+    const h = new Harness();
+    await h.update(
+      groupCommand(ADMIN_ID, CHAT_A, "/descricao Vagas e processos seletivos.\nSem spam."),
+    );
+    expect(h.callsOf("deleteMessage")[0]!.payload).toMatchObject({ chat_id: CHAT_A });
+    expect(h.callsOf("sendMessage").at(-1)!.payload.chat_id).toBe(ADMIN_ID);
+
+    await h.update(privateCommand(ADMIN_ID, "/sincronizar")); // Telegram devolve outra descrição
+    await h.update(privateCommand(USER, "/grupos"));
+    const text = String(h.callsOf("sendMessage").at(-1)!.payload.text);
+    expect(text).toContain("Vagas e processos seletivos.\nSem spam.");
+    expect(text).not.toContain(`Sobre o chat ${CHAT_A}`);
+
+    await h.update(groupCommand(ADMIN_ID, CHAT_A, "/descricao apagar"));
+    await h.update(privateCommand(USER, "/grupos"));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain(
+      `Sobre o chat ${CHAT_A}`,
+    );
+  });
+
+  it("/descricao fora de um grupo explica como usar; não-admin no grupo é ignorado", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, "/descricao qualquer coisa"));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("dentro do grupo");
+    const before = h.calls.length;
+    await h.update(groupCommand(USER, CHAT_A, "/descricao hackeado"));
+    expect(h.calls).toHaveLength(before);
+  });
+
   it("grupo sem descrição aparece como tal, e verificado ganha o botão de convites", async () => {
     const h = new Harness();
     h.me = clone(cadete);

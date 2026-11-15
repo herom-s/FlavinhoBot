@@ -165,6 +165,8 @@ Para trocar de banco (Postgres no Supabase ou Neon, por exemplo), implemente a i
 
 **Freeze e blackhole.** A spec negava qualquer `blackholed_at` vencido. Na prática, quem está em freeze tem a data de blackhole vencida e a conta **ativa**; quem caiu no blackhole tem a conta **inativa** (comparamos uma conta de cada pelo `/intra`). Por isso o passo 6 exige as duas coisas. Se a Intra demorar para desativar a conta de alguém recém-caído, a revalidação diária pega depois.
 
+**Descrição dos grupos.** A Bot API não devolve `description` no `getChat` para grupos que fazem parte de uma Comunidade do Telegram (só o campo `community`, com id e nome). Por isso os admins definem a descrição com `/descricao` (coluna `custom_description`), que vale por cima da do Telegram e não é apagada pelas atualizações.
+
 **Comando `/avisar`.** A spec pede um aviso fixado para membros antigos com prazo, mas não listava um comando para isso.
 
 **PKCE não usado.** Era opcional na spec e não confirmamos suporte na Intra. O state de uso único, o `redirect_uri` fixo e o client secret no servidor cobrem o fluxo.

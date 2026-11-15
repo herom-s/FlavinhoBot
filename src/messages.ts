@@ -122,6 +122,22 @@ export const msg = {
   abraPrivado: (botUsername: string) =>
     `Não consegui te responder no privado, jovem. Abre @${escapeHtml(botUsername)}, manda /start e tenta de novo.`,
 
+  // ---------- descrição dos grupos ----------
+  descricaoUso:
+    "Mande <code>/descricao seu texto</code> <b>dentro do grupo</b> que você quer descrever. " +
+    "Eu apago o comando de lá e te confirmo aqui. <code>/descricao</code> sozinho mostra a atual; " +
+    "<code>/descricao apagar</code> volta a usar a descrição do Telegram.",
+  descricaoAtual: (title: string, text: string | null) =>
+    text
+      ? `📝 Descrição de <b>${escapeHtml(title)}</b> no /grupos:\n\n${escapeHtml(text)}`
+      : `<b>${escapeHtml(title)}</b> ainda não tem descrição. Mande <code>/descricao seu texto</code> no grupo.`,
+  descricaoSalva: (title: string, text: string) =>
+    `✅ Descrição de <b>${escapeHtml(title)}</b> salva. É assim que vai aparecer no /grupos:\n\n${escapeHtml(text)}`,
+  descricaoRemovida: (title: string) =>
+    `🗑️ Descrição de <b>${escapeHtml(title)}</b> apagada. Volto a usar a do Telegram, se houver.`,
+  descricaoLonga: (max: number) =>
+    `Essa descrição passou de ${max} caracteres. Encurta um pouco, jovem.`,
+
   // ---------- admins do bot ----------
   botaoTornarAdmin: "➕ Tornar admin",
   adminAdicionado: (who: string, id: number, by: string) =>
