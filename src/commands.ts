@@ -27,6 +27,11 @@ export const ADMIN_COMMANDS: CommandInfo[] = [
   { command: "allow", description: "Libera um caso especial", usage: "<login> <motivo>" },
   { command: "deny", description: "Bloqueia e remove dos grupos", usage: "<login> <motivo>" },
   { command: "reverificar", description: "Revalida agora na Intra", usage: "<login>" },
+  {
+    command: "intra",
+    description: "Mostra o que a Intra diz de um login e a decisão do bot",
+    usage: "<login>",
+  },
   { command: "pendentes", description: "Pedidos de entrada esperando verificação" },
   {
     command: "sincronizar",

@@ -76,8 +76,9 @@ export class IntraClient {
   }
 
   /** Usa token de app (client_credentials). Retorna `null` se o usuário não existe. */
-  async getUser(intraId: number): Promise<IntraUser | null> {
-    const res = await this.request(`/v2/users/${intraId}`, await this.getAppToken());
+  async getUser(idOrLogin: number | string): Promise<IntraUser | null> {
+    const key = encodeURIComponent(String(idOrLogin));
+    const res = await this.request(`/v2/users/${key}`, await this.getAppToken());
     if (res.status === 404) return null;
     if (!res.ok) throw new IntraError(`GET /v2/users/:id falhou`, res.status);
     return (await res.json()) as IntraUser;

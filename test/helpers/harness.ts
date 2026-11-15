@@ -111,9 +111,12 @@ export class Harness {
       return json({ access_token: isApp ? APP_TOKEN : USER_TOKEN, expires_in: 7200 });
     }
     if (path === "/v2/me") return this.me ? json(this.me) : json({}, 401);
-    const m = path.match(/^\/v2\/users\/(\d+)$/);
+    const m = path.match(/^\/v2\/users\/([^/]+)$/);
     if (m) {
-      const u = this.intraUsers.get(Number(m[1]));
+      const key = decodeURIComponent(m[1]!);
+      const u = /^\d+$/.test(key)
+        ? this.intraUsers.get(Number(key))
+        : [...this.intraUsers.values()].find((x) => x.login === key);
       return u ? json(u) : json({}, 404);
     }
     return json({}, 404);

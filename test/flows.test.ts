@@ -521,6 +521,26 @@ describe("admins pelo Telegram", () => {
   });
 });
 
+describe("/intra", () => {
+  it("mostra os campos da Intra e a decisão do bot, sem gravar nada", async () => {
+    const h = new Harness();
+    h.intraUsers.set(100004, clone(blackhole));
+    await h.update(privateCommand(ADMIN_ID, "/intra blackhole"));
+    const text = String(h.callsOf("sendMessage").at(-1)!.payload.text);
+    expect(text).toContain("❌ blackhole");
+    expect(text).toContain("cursus 21 (42cursus)");
+    expect(text).toContain("active? true");
+    expect(await h.repo.getMember(USER)).toBeNull();
+  });
+
+  it("não funciona para quem não é admin", async () => {
+    const h = new Harness();
+    h.intraUsers.set(100004, clone(blackhole));
+    await h.update(privateCommand(USER, "/intra blackhole"));
+    expect(h.calls).toHaveLength(0);
+  });
+});
+
 describe("/stats por grupo", () => {
   it("mostra total, com cordão e sem cordão, contando quem já estava no grupo e verificou", async () => {
     const h = new Harness();

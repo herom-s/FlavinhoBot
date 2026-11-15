@@ -1,9 +1,15 @@
 import type { Bot, Context } from "grammy";
 import type { MemberRecord } from "../db/repository";
-import type { DenyReason } from "../domain/eligibility";
+import { decidirAcesso, type DenyReason, type IntraUser } from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
-import { adminIds, isAdmin, protectedChatIds, type Services } from "../services/context";
+import {
+  adminIds,
+  eligibilityConfig,
+  isAdmin,
+  protectedChatIds,
+  type Services,
+} from "../services/context";
 import { removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
 export const GRANDFATHER_KEY = "grandfather_deadline";
@@ -63,6 +69,31 @@ async function groupCounts(s: Services): Promise<string[]> {
     "<i>“Sem cordão” inclui quem nunca falou nem verificou; mande /avisar para chamá-los.</i>",
   );
   return lines;
+}
+
+function describeIntraUser(user: IntraUser, decision: string, mainCursusId: number): string {
+  const raw = user as unknown as Record<string, unknown>;
+  const flags = Object.keys(raw)
+    .filter((k) => k.endsWith("?"))
+    .map((k) => `${k} ${String(raw[k])}`)
+    .join(" · ");
+  const d = (v: string | null | undefined) => (v ? fmt(v) : "—");
+  const cursus = (user.cursus_users ?? []).map(
+    (c) =>
+      `• cursus ${c.cursus_id}${c.cursus_id === mainCursusId ? " (42cursus)" : ""}: ` +
+      `início ${d(c.begin_at)} · fim ${d(c.end_date)} · blackhole ${d(c.blackholed_at)}` +
+      (c.grade ? ` · ${escapeHtml(c.grade)}` : ""),
+  );
+  const campus = (user.campus_users ?? [])
+    .map((c) => `${c.campus_id}${c.is_primary ? " (principal)" : ""}`)
+    .join(", ");
+  return [
+    `🔎 <b>${escapeHtml(user.login)}</b> (intra ${user.id})`,
+    `Decisão do bot agora: <b>${escapeHtml(decision)}</b>`,
+    escapeHtml(flags),
+    `Campus: ${campus || "—"}`,
+    ...cursus,
+  ].join("\n");
 }
 
 export function registerAdminCommands(bot: Bot, s: Services): void {
@@ -169,6 +200,38 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
   };
   admin.command("allow", overrideCommand("allow"));
   admin.command("deny", overrideCommand("deny"));
+
+  // Diagnóstico: o que a Intra devolve para um login e o que o bot decidiria. Não grava nada.
+  admin.command("intra", async (ctx) => {
+    const [login] = args(ctx);
+    if (!login || !LOGIN_RE.test(login))
+      return void (await reply(ctx, "Uso: /intra &lt;login&gt;"));
+    let user: IntraUser | null;
+    try {
+      user = await s.intra.getUser(login.toLowerCase());
+    } catch (err) {
+      return void (await reply(
+        ctx,
+        `Erro ao consultar a Intra: ${escapeHtml(String(err).slice(0, 120))}`,
+      ));
+    }
+    if (!user) return void (await reply(ctx, `Não achei <b>${escapeHtml(login)}</b> na Intra.`));
+    const override = await s.repo.getOverride(user.login);
+    const result = decidirAcesso(
+      user,
+      override?.type ?? null,
+      s.now(),
+      eligibilityConfig(s.config),
+    );
+    await reply(
+      ctx,
+      describeIntraUser(
+        user,
+        result.status === "PERMITIR" ? `✅ ${result.motivo}` : `❌ ${result.motivo}`,
+        s.config.mainCursusId,
+      ),
+    );
+  });
 
   admin.command("reverificar", async (ctx) => {
     const [login] = args(ctx);
