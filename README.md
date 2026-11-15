@@ -18,7 +18,7 @@ Só entra nos grupos quem prova, pelo login oficial da Intra 42, que é cadete a
 
 ---
 
-A 42 Comunidade reúne estudantes da 42 São Paulo em cerca de 19 grupos temáticos (Geral, Carreira, Eventos, Moradia, clubes...). Na migração do WhatsApp para o Telegram, o FlavinhoBot fica na porta: quem pede para entrar faz login na Intra, o bot confere o cursus e libera ou recusa na hora.
+A 42 Comunidade reúne estudantes da 42 São Paulo em cerca de 19 grupos temáticos (Geral, Carreira, Eventos, Moradia, clubes...). No Telegram, o FlavinhoBot fica na porta: quem pede para entrar faz login na Intra, o bot confere o cursus e libera ou recusa na hora.
 
 Pisciners, quem caiu no blackhole e pessoas de fora ficam do lado de fora. Nas palavras do Flavinho: _"Tá elegante hoje, hein, jovem? Cadê o cordão?"_
 

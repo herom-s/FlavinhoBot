@@ -228,12 +228,11 @@ O `.env` está no `.gitignore`. Não commite, e não commite o `wrangler.toml` c
 - [ ] Teste o fluxo com uma conta de admin: pedir para entrar, verificar, entrar em um segundo grupo.
 - [ ] Rode `/stats` e `/sincronizar`.
 
-## Migração do WhatsApp
+## Lançamento
 
-1. Fixe no grupo de avisos do WhatsApp o link `t.me/FlavinhoBot?start=entrar`, com a frase "a entrada é validada pela Intra, leva 30 segundos".
-2. Mantenha os dois ativos por 2 a 4 semanas.
-3. Admins e staff entram primeiro para testar.
-4. Acompanhe `/stats` e `/pendentes` e use `/allow` para destravar casos especiais.
+1. Admins e staff entram primeiro para testar o fluxo.
+2. Divulgue o link `t.me/FlavinhoBot?start=entrar`, com a frase "a entrada é validada pela Intra, leva 30 segundos".
+3. Acompanhe `/stats` e `/pendentes` e use `/allow` para destravar casos especiais.
 
 ## Problemas comuns
 
