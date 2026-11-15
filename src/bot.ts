@@ -4,6 +4,7 @@ import { IntraClient } from "./auth/intraClient";
 import { redirectUri } from "./auth/oauth";
 import type { Config } from "./config";
 import type { Repository } from "./db/repository";
+import { registerAdminGroupCleanup } from "./handlers/adminScope";
 import { registerAdmins } from "./handlers/admins";
 import { registerAdminCommands } from "./handlers/commands.admin";
 import { registerUserCommands } from "./handlers/commands.user";
@@ -54,6 +55,7 @@ export function createApp(opts: AppOptions): App {
 
   registerChatMember(bot, services); // primeiro: só observa e chama next()
   registerJoinRequest(bot, services);
+  registerAdminGroupCleanup(bot, services);
   registerHelp(bot, services);
   registerProtection(bot, services);
   registerAdmins(bot, services);

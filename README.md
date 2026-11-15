@@ -91,7 +91,7 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/ajuda`        | como falar com um admin                                                        |
 | `/help`         | lista os comandos                                                              |
 
-**Para admins** (só no privado ou no chat de admins; para os outros, o bot não responde)
+**Para admins** (no privado, no chat de admins ou num grupo protegido, onde o bot apaga o comando e responde no privado; para quem não é admin, o bot não responde)
 
 | Comando                   | O que faz                                                                                     |
 | ------------------------- | --------------------------------------------------------------------------------------------- |

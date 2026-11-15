@@ -18,6 +18,7 @@ import {
   type Services,
 } from "../services/context";
 import { removeFromChats, safeDecline, sendDm } from "../services/telegram";
+import { adminReply, adminScope } from "./adminScope";
 
 export const GRANDFATHER_KEY = "grandfather_deadline";
 
@@ -167,13 +168,9 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
       await sendDm(s.api, ctx.chat.id, `chat_id: <code>${ctx.chat.id}</code>`);
     });
 
-  // Demais comandos: admin + (privado ou chat de admins). Não-admin cai fora sem resposta.
-  const admin = bot.filter(
-    async (ctx) =>
-      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId) &&
-      (await isAdmin(s, ctx.from?.id)),
-  );
-  const reply = (ctx: Context, text: string) => sendDm(s.api, ctx.chat!.id, text);
+  // Demais comandos: admin no privado, no chat de admins ou num grupo protegido (resposta no privado).
+  const admin = bot.filter(adminScope(s));
+  const reply = (ctx: Context, text: string) => adminReply(s, ctx, text);
 
   admin.command("stats", async (ctx) => {
     const now = s.now();

@@ -119,6 +119,9 @@ export const msg = {
     "Não conheço nenhum grupo sem proteção. Me adicione como admin no grupo e eu aviso aqui.",
   nenhumProtegido: "Nenhum grupo protegido no momento.",
 
+  abraPrivado: (botUsername: string) =>
+    `Não consegui te responder no privado, jovem. Abre @${escapeHtml(botUsername)}, manda /start e tenta de novo.`,
+
   // ---------- admins do bot ----------
   botaoTornarAdmin: "➕ Tornar admin",
   adminAdicionado: (who: string, id: number, by: string) =>
@@ -207,6 +210,7 @@ export const help = {
     (inGroup
       ? `Aqui no grupo o @ do bot é opcional: <code>/stats</code> e <code>/stats@${escapeHtml(botUsername)}</code> funcionam igual.`
       : "Esses comandos funcionam aqui no privado e no chat de admins.") +
+    "\nNos grupos protegidos eles também funcionam: eu apago o comando do grupo e respondo no seu privado." +
     "\nPara mudar a descrição de um grupo, edite a descrição no próprio Telegram e rode /sincronizar.",
 
   /** Alguém fora de ADMIN_IDS pedindo /help no chat de admins. */

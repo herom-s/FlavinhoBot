@@ -521,6 +521,60 @@ describe("admins pelo Telegram", () => {
   });
 });
 
+describe("comandos de admin nos grupos protegidos", () => {
+  it("apaga o comando do grupo e responde no privado do admin", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, CHAT_A, "/stats"));
+    expect(h.callsOf("deleteMessage")[0]!.payload).toEqual({ chat_id: CHAT_A, message_id: 50 });
+    const replies = h.callsOf("sendMessage");
+    expect(replies).toHaveLength(1);
+    expect(replies[0]!.payload.chat_id).toBe(ADMIN_ID);
+    expect(String(replies[0]!.payload.text)).toContain("Estatísticas");
+  });
+
+  it("funciona com o @ do bot e com comandos de outros módulos (/admins, /proteger)", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, CHAT_B, "/admins@FlavinhoBot"));
+    await h.update(groupCommand(ADMIN_ID, CHAT_B, "/proteger"));
+    expect(h.callsOf("deleteMessage")).toHaveLength(2);
+    expect(h.callsOf("sendMessage").every((c) => c.payload.chat_id === ADMIN_ID)).toBe(true);
+  });
+
+  it("/novo_admin respondendo a mensagem de alguém no grupo", async () => {
+    const h = new Harness();
+    const cmd = groupCommand(ADMIN_ID, CHAT_A, "/novo_admin");
+    (cmd.message as Record<string, unknown>).reply_to_message = {
+      message_id: 40,
+      date: 0,
+      chat: cmd.message.chat,
+      from: { id: 888002, is_bot: false, first_name: "Bia", username: "bia42" },
+      text: "oi",
+    };
+    await h.update(cmd);
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("@bia42");
+    expect(h.callsOf("sendMessage").at(-1)!.payload.chat_id).toBe(ADMIN_ID);
+  });
+
+  it("quem não é admin: nada é apagado nem respondido", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(USER, CHAT_A, "/stats"));
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it("/help continua público no grupo e não é apagado", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, CHAT_A, "/help"));
+    expect(h.callsOf("deleteMessage")).toHaveLength(0);
+    expect(h.callsOf("sendMessage")[0]!.payload.chat_id).toBe(CHAT_A);
+  });
+
+  it("em grupo que não é protegido, ignora", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, -555, "/stats"));
+    expect(h.calls).toHaveLength(0);
+  });
+});
+
 describe("/intra", () => {
   it("mostra os campos da Intra e a decisão do bot, sem gravar nada", async () => {
     const h = new Harness();

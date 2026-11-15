@@ -3,6 +3,7 @@ import { ADMIN_COMMANDS, toBotCommands } from "../commands";
 import { msg } from "../messages";
 import { invalidateAdmins, isAdmin, isOwner, type Services } from "../services/context";
 import { sendDm } from "../services/telegram";
+import { adminReply, adminScope } from "./adminScope";
 
 const CALLBACK_RE = /^(addadmin|rmadmin):(\d+)$/;
 
@@ -83,11 +84,7 @@ export function registerAdmins(bot: Bot, s: Services): void {
       .catch(() => sendDm(s.api, ctx.chat?.id ?? s.config.adminChatId, text));
   });
 
-  const admin = bot.filter(
-    async (ctx) =>
-      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId) &&
-      (await isAdmin(s, ctx.from?.id)),
-  );
+  const admin = bot.filter(adminScope(s));
 
   admin.command("admins", async (ctx) => {
     const added = (await s.repo.listBotAdmins()).filter(
@@ -98,29 +95,25 @@ export function registerAdmins(bot: Bot, s: Services): void {
     const kb = new InlineKeyboard();
     for (const a of added)
       kb.text(`🗑️ ${a.label ?? a.telegramId}`, `rmadmin:${a.telegramId}`).row();
-    await sendDm(s.api, ctx.chat.id, msg.listaAdmins([...owners, ...others]), {
+    await adminReply(s, ctx, msg.listaAdmins([...owners, ...others]), {
       reply_markup: added.length ? kb : undefined,
     });
   });
 
   admin.command("novo_admin", async (ctx) => {
     const target = await resolveTarget(s, ctx);
-    if (!target) return void (await sendDm(s.api, ctx.chat.id, msg.usoNovoAdmin));
+    if (!target) return void (await adminReply(s, ctx, msg.usoNovoAdmin));
     if (await isAdmin(s, target.id)) {
-      return void (await sendDm(
-        s.api,
-        ctx.chat.id,
-        msg.jaEhAdmin(target.label ?? String(target.id)),
-      ));
+      return void (await adminReply(s, ctx, msg.jaEhAdmin(target.label ?? String(target.id))));
     }
     const text = await setAdmin(s, target.id, true, target.label, ctx.from!.id, nameOf(ctx));
-    await sendDm(s.api, ctx.chat.id, text);
+    await adminReply(s, ctx, text);
   });
 
   admin.command("remover_admin", async (ctx) => {
     const target = await resolveTarget(s, ctx);
-    if (!target) return void (await sendDm(s.api, ctx.chat.id, msg.usoRemoverAdmin));
+    if (!target) return void (await adminReply(s, ctx, msg.usoRemoverAdmin));
     const text = await setAdmin(s, target.id, false, target.label, ctx.from!.id, nameOf(ctx));
-    await sendDm(s.api, ctx.chat.id, text);
+    await adminReply(s, ctx, text);
   });
 }

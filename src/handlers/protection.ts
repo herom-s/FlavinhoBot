@@ -8,6 +8,7 @@ import {
   type Services,
 } from "../services/context";
 import { sendDm } from "../services/telegram";
+import { adminReply, adminScope } from "./adminScope";
 
 const CB_PROTECT = "proteger";
 const CB_UNPROTECT = "desproteger";
@@ -63,11 +64,7 @@ export function registerProtection(bot: Bot, s: Services): void {
       .catch(() => sendDm(s.api, ctx.chat?.id ?? s.config.adminChatId, text));
   });
 
-  const admin = bot.filter(
-    async (ctx) =>
-      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId) &&
-      (await isAdmin(s, ctx.from?.id)),
-  );
+  const admin = bot.filter(adminScope(s));
 
   // /proteger: lista os grupos conhecidos ainda não protegidos, com um botão para cada.
   admin.command("proteger", async (ctx) => {
@@ -76,22 +73,22 @@ export function registerProtection(bot: Bot, s: Services): void {
       (c) => !protectedIds.includes(c.chatId) && c.chatId !== s.config.adminChatId,
     );
     if (candidates.length === 0) {
-      return void (await sendDm(s.api, ctx.chat.id, msg.nenhumParaProteger));
+      return void (await adminReply(s, ctx, msg.nenhumParaProteger));
     }
     const kb = new InlineKeyboard();
     for (const c of candidates) {
       kb.text(`✅ ${c.title ?? c.chatId}`, `${CB_PROTECT}:${c.chatId}`).row();
     }
-    await sendDm(s.api, ctx.chat.id, msg.escolhaProteger, { reply_markup: kb });
+    await adminReply(s, ctx, msg.escolhaProteger, { reply_markup: kb });
   });
 
   // /desproteger: lista os grupos protegidos, com um botão para cada.
   admin.command("desproteger", async (ctx) => {
     const ids = await protectedChatIds(s);
-    if (ids.length === 0) return void (await sendDm(s.api, ctx.chat.id, msg.nenhumProtegido));
+    if (ids.length === 0) return void (await adminReply(s, ctx, msg.nenhumProtegido));
     const titles = await s.repo.getChatTitles(ids);
     const kb = new InlineKeyboard();
     for (const id of ids) kb.text(`🔓 ${titles.get(id) ?? id}`, `${CB_UNPROTECT}:${id}`).row();
-    await sendDm(s.api, ctx.chat.id, msg.escolhaDesproteger, { reply_markup: kb });
+    await adminReply(s, ctx, msg.escolhaDesproteger, { reply_markup: kb });
   });
 }
