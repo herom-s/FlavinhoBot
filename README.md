@@ -38,26 +38,26 @@ Pisciners, quem caiu no blackhole e pessoas de fora ficam do lado de fora. Nas p
 sequenceDiagram
     actor U as Usuário
     participant T as Telegram
-    participant B as FlavinhoBot (Worker)
+    participant B as FlavinhoBot
     participant I as Intra 42
 
     U->>T: Pede para entrar no grupo
     T->>B: chat_join_request
-    alt já verificado
-        B->>T: approveChatJoinRequest
+    alt já tem o cordão
+        B->>T: aprova o pedido
     else primeira vez
-        B->>U: DM com botão "Entrar com a Intra 42"
-        U->>B: GET /auth/start?state=...
-        B->>I: redirect para /oauth/authorize
-        I->>B: GET /auth/callback?code=...
-        B->>I: troca o code, GET /v2/me
-        Note over B: avaliarElegibilidade()<br/>token descartado
+        B->>U: DM com o botão Entrar com a Intra 42
+        U->>B: abre /auth/start
+        B->>I: redireciona para o login da Intra
+        I->>B: volta em /auth/callback com o code
+        B->>I: troca o code e lê o perfil em /v2/me
+        Note over B: avalia a elegibilidade<br/>e descarta o token
         alt cadete ativo ou alumni
-            B->>U: Boas-vindas + links úteis
-            B->>T: approveChatJoinRequest
+            B->>U: boas-vindas e links úteis
+            B->>T: aprova o pedido
         else não elegível
-            B->>U: Explica o motivo
-            B->>T: declineChatJoinRequest
+            B->>U: explica o motivo
+            B->>T: recusa o pedido
         end
     end
 ```
