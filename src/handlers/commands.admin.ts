@@ -9,6 +9,7 @@ import {
   type IntraUser,
 } from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
+import { log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
 import {
   adminIds,
@@ -319,6 +320,12 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
     for (const chatId of ids) {
       try {
         const chat = await s.api.getChat(chatId);
+        log.info("sync_chat", {
+          chat_id: chatId,
+          type: chat.type,
+          description_len: chat.description?.length ?? 0,
+          keys: Object.keys(chat).sort().join(","),
+        });
         const title = "title" in chat && chat.title ? chat.title : String(chatId);
         await s.repo.upsertChat(chatId, title, nowIso);
         await s.repo.setChatDescription(chatId, chat.description?.trim() || null, nowIso);
