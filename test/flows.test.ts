@@ -527,10 +527,23 @@ describe("/intra", () => {
     h.intraUsers.set(100004, clone(blackhole));
     await h.update(privateCommand(ADMIN_ID, "/intra blackhole"));
     const text = String(h.callsOf("sendMessage").at(-1)!.payload.text);
-    expect(text).toContain("❌ blackhole");
-    expect(text).toContain("cursus 21 (42cursus)");
-    expect(text).toContain("active? true");
+    expect(text).toContain("❌ Não entra: blackhole");
+    expect(text).toContain("<b>42cursus</b>");
+    expect(text).toContain("⚫ blackhole 01/09/2025 (já passou há");
+    expect(text).toContain("<b>Conta</b>: ativa");
+    expect(text).not.toContain("Sem a liberação manual");
     expect(await h.repo.getMember(USER)).toBeNull();
+  });
+
+  it("com /allow, mostra também o que as regras sozinhas decidiriam", async () => {
+    const h = new Harness();
+    h.intraUsers.set(100004, clone(blackhole));
+    await h.update(privateCommand(ADMIN_ID, "/allow blackhole freeze"));
+    await h.update(privateCommand(ADMIN_ID, "/intra blackhole"));
+    const text = String(h.callsOf("sendMessage").at(-1)!.payload.text);
+    expect(text).toContain("✅ Pode entrar: liberação manual");
+    expect(text).toContain("Sem a liberação manual: ❌ Não entra: blackhole");
+    expect(text).toContain("Motivo da liberação: freeze");
   });
 
   it("não funciona para quem não é admin", async () => {

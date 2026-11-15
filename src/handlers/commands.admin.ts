@@ -1,6 +1,13 @@
 import type { Bot, Context } from "grammy";
-import type { MemberRecord } from "../db/repository";
-import { decidirAcesso, type DenyReason, type IntraUser } from "../domain/eligibility";
+import type { MemberRecord, OverrideRecord } from "../db/repository";
+import {
+  avaliarElegibilidade,
+  decidirAcesso,
+  type AllowReason,
+  type DenyReason,
+  type EligibilityResult,
+  type IntraUser,
+} from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
 import {
@@ -71,29 +78,85 @@ async function groupCounts(s: Services): Promise<string[]> {
   return lines;
 }
 
-function describeIntraUser(user: IntraUser, decision: string, mainCursusId: number): string {
-  const raw = user as unknown as Record<string, unknown>;
-  const flags = Object.keys(raw)
-    .filter((k) => k.endsWith("?"))
-    .map((k) => `${k} ${String(raw[k])}`)
-    .join(" · ");
-  const d = (v: string | null | undefined) => (v ? fmt(v) : "—");
-  const cursus = (user.cursus_users ?? []).map(
-    (c) =>
-      `• cursus ${c.cursus_id}${c.cursus_id === mainCursusId ? " (42cursus)" : ""}: ` +
-      `início ${d(c.begin_at)} · fim ${d(c.end_date)} · blackhole ${d(c.blackholed_at)}` +
-      (c.grade ? ` · ${escapeHtml(c.grade)}` : ""),
+const ALLOW_LABEL: Record<AllowReason, string> = {
+  cadete_ativo: "cadete ativo",
+  alumni: "alumni",
+  staff: "staff",
+  override: "liberação manual (/allow)",
+};
+
+const CURSUS_NAME: Record<number, string> = { 9: "C Piscine" };
+
+const decisionText = (r: EligibilityResult): string =>
+  r.status === "PERMITIR"
+    ? `✅ Pode entrar: ${ALLOW_LABEL[r.motivo]}`
+    : `❌ Não entra: ${motivoAdmin[r.motivo]}`;
+
+const dateOnly = (iso: string) =>
+  new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+/** "já passou há 37 dias" / "faltam 12 dias" / "hoje". */
+function relative(iso: string, now: Date): string {
+  const days = Math.round((Date.parse(iso) - now.getTime()) / 86_400_000);
+  if (days === 0) return "hoje";
+  return days < 0 ? `já passou há ${-days} dias` : `faltam ${days} dias`;
+}
+
+function describeIntraUser(
+  user: IntraUser,
+  override: OverrideRecord | null,
+  now: Date,
+  s: Services,
+): string {
+  const cfg = eligibilityConfig(s.config);
+  const result = decidirAcesso(user, override?.type ?? null, now, cfg);
+  const rulesOnly = avaliarElegibilidade(user, now, cfg);
+  const yes = (v: boolean | undefined, sim: string, nao: string) => (v ? sim : nao);
+
+  const lines = [
+    `🔎 <b>${escapeHtml(user.login)}</b>  <i>intra ${user.id}</i>`,
+    "",
+    `<b>${escapeHtml(decisionText(result))}</b>`,
+  ];
+  if (override) {
+    lines.push(
+      `<i>Sem a liberação manual: ${escapeHtml(decisionText(rulesOnly))}</i>`,
+      `<i>Motivo da liberação: ${escapeHtml(override.reason ?? "—")}</i>`,
+    );
+  }
+
+  const campi = (user.campus_users ?? []).map((c) => {
+    const ok = !cfg.allowedCampusIds.length || cfg.allowedCampusIds.includes(c.campus_id);
+    return `${c.campus_id}${c.is_primary ? " (principal)" : ""}${ok ? " ✓" : " ✗"}`;
+  });
+  lines.push(
+    "",
+    `<b>Conta</b>: ${yes(user["active?"], "ativa", "inativa")} · ${yes(user["alumni?"], "alumni", "não é alumni")} · ${yes(user["staff?"], "staff", "não é staff")}`,
+    `<b>Campus</b>: ${campi.join(", ") || "—"}`,
+    "",
+    "📚 <b>Cursus</b>",
   );
-  const campus = (user.campus_users ?? [])
-    .map((c) => `${c.campus_id}${c.is_primary ? " (principal)" : ""}`)
-    .join(", ");
-  return [
-    `🔎 <b>${escapeHtml(user.login)}</b> (intra ${user.id})`,
-    `Decisão do bot agora: <b>${escapeHtml(decision)}</b>`,
-    escapeHtml(flags),
-    `Campus: ${campus || "—"}`,
-    ...cursus,
-  ].join("\n");
+
+  const cursus = [...(user.cursus_users ?? [])].sort(
+    (a, b) => Number(b.cursus_id === cfg.mainCursusId) - Number(a.cursus_id === cfg.mainCursusId),
+  );
+  for (const c of cursus) {
+    const name =
+      c.cursus_id === cfg.mainCursusId
+        ? "42cursus"
+        : (CURSUS_NAME[c.cursus_id] ?? `Cursus ${c.cursus_id}`);
+    lines.push(`<b>${name}</b>${c.grade ? ` · ${escapeHtml(c.grade)}` : ""}`);
+    if (c.begin_at) lines.push(`   início ${dateOnly(c.begin_at)}`);
+    if (c.end_date) lines.push(`   fim ${dateOnly(c.end_date)} (${relative(c.end_date, now)})`);
+    if (c.blackholed_at) {
+      const passed = Date.parse(c.blackholed_at) <= now.getTime();
+      lines.push(
+        `   ${passed ? "⚫" : "⏳"} blackhole ${dateOnly(c.blackholed_at)} (${relative(c.blackholed_at, now)})`,
+      );
+    }
+  }
+  if (cursus.length === 0) lines.push("nenhum");
+  return lines.join("\n");
 }
 
 export function registerAdminCommands(bot: Bot, s: Services): void {
@@ -217,20 +280,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
     }
     if (!user) return void (await reply(ctx, `Não achei <b>${escapeHtml(login)}</b> na Intra.`));
     const override = await s.repo.getOverride(user.login);
-    const result = decidirAcesso(
-      user,
-      override?.type ?? null,
-      s.now(),
-      eligibilityConfig(s.config),
-    );
-    await reply(
-      ctx,
-      describeIntraUser(
-        user,
-        result.status === "PERMITIR" ? `✅ ${result.motivo}` : `❌ ${result.motivo}`,
-        s.config.mainCursusId,
-      ),
-    );
+    await reply(ctx, describeIntraUser(user, override, s.now(), s));
   });
 
   admin.command("reverificar", async (ctx) => {
