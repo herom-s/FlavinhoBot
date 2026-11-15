@@ -157,12 +157,17 @@ export const help = {
   /** Admin, no privado ou no chat de admins. Em grupo, os comandos precisam do @ do bot. */
   admin: (commands: CommandInfo[], botUsername: string, inGroup: boolean): string =>
     "🛠️ <b>Comandos de admin</b>\n\n" +
-    commandList(commands, inGroup ? `@${botUsername}` : "") +
+    commandList(commands) +
     "\n\n" +
     (inGroup
-      ? `Aqui no grupo, use o @ do bot no comando (ex.: <code>/stats@${escapeHtml(botUsername)}</code>).`
+      ? `Aqui no grupo o @ do bot é opcional: <code>/stats</code> e <code>/stats@${escapeHtml(botUsername)}</code> funcionam igual.`
       : "Esses comandos funcionam aqui no privado e no chat de admins.") +
     "\nPara mudar a descrição de um grupo, edite a descrição no próprio Telegram e rode /sincronizar.",
+
+  /** Alguém fora de ADMIN_IDS pedindo /help no chat de admins. */
+  naoAdmin: (userId: number, firstName: string): string =>
+    `${escapeHtml(firstName)}, você ainda não está na lista de admins do bot, então os comandos de admin não funcionam pra você. ` +
+    `Seu ID é <code>${userId}</code>: peça para incluírem em <code>ADMIN_IDS</code>.`,
 
   /** Membro comum, no privado. */
   usuario: (commands: CommandInfo[]): string =>

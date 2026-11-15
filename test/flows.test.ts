@@ -313,12 +313,14 @@ describe("/help", () => {
     expect(lastText(h)).not.toContain("/allow@");
   });
 
-  it("admin no chat de admins recebe os comandos com o @ do bot", async () => {
+  it("admin no chat de admins recebe os comandos sem exigir o @ do bot", async () => {
     const h = new Harness();
     await h.update(groupCommand(ADMIN_ID, ADMIN_CHAT, "/help@FlavinhoBot"));
     const reply = h.callsOf("sendMessage").at(-1)!;
     expect(reply.payload.chat_id).toBe(ADMIN_CHAT);
-    expect(lastText(h)).toContain("/stats@FlavinhoBot");
+    expect(lastText(h)).toContain("/stats: ");
+    expect(lastText(h)).not.toContain("/quem@");
+    expect(lastText(h)).toContain("opcional");
   });
 
   it("membro no privado recebe só os comandos de usuário", async () => {
@@ -328,7 +330,7 @@ describe("/help", () => {
     expect(lastText(h)).not.toContain("/allow");
   });
 
-  it("no grupo protegido explica o bot, respondendo à mensagem, no máximo 1x por minuto", async () => {
+  it("no grupo protegido explica o bot, respondendo à mensagem, no máximo 1x por minuto por pessoa", async () => {
     const h = new Harness();
     await h.update(groupCommand(USER, CHAT_A, "/help"));
     const reply = h.callsOf("sendMessage").at(-1)!;
@@ -338,8 +340,20 @@ describe("/help", () => {
     expect(lastText(h)).toContain("@FlavinhoBot");
     expect(lastText(h)).not.toContain("/allow");
 
-    await h.update(groupCommand(USER + 1, CHAT_A, "/help"));
+    await h.update(groupCommand(USER, CHAT_A, "/help"));
     expect(h.callsOf("sendMessage")).toHaveLength(1);
+
+    await h.update(groupCommand(USER + 1, CHAT_A, "/help"));
+    expect(h.callsOf("sendMessage")).toHaveLength(2);
+  });
+
+  it("quem não é admin pedindo /help no chat de admins recebe o aviso com o próprio ID", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(USER, ADMIN_CHAT, "/help"));
+    expect(h.callsOf("sendMessage").at(-1)!.payload.chat_id).toBe(ADMIN_CHAT);
+    expect(lastText(h)).toContain(`<code>${USER}</code>`);
+    expect(lastText(h)).toContain("ADMIN_IDS");
+    expect(lastText(h)).not.toContain("Comandos de admin");
   });
 
   it("admin pedindo /help num grupo protegido recebe a explicação pública, não a de admin", async () => {

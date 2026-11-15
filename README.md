@@ -107,11 +107,13 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/avisar`                 | fixa nos grupos o aviso para membros antigos verificarem |
 | `/chatid`                 | mostra o ID do chat (útil no setup)                      |
 
+No chat de admins, o @ do bot nos comandos é opcional: `/stats` e `/stats@<bot>` funcionam igual. Quem não está em `ADMIN_IDS` e manda `/help` ali recebe o próprio ID, para ser incluído.
+
 **Nos grupos protegidos**
 
-| Comando | O que faz                                                                                         |
-| ------- | ------------------------------------------------------------------------------------------------- |
-| `/help` | explica o que é o bot e o que dá pra fazer no privado (no máximo 1 resposta por minuto por grupo) |
+| Comando | O que faz                                                                                                |
+| ------- | -------------------------------------------------------------------------------------------------------- |
+| `/help` | explica o que é o bot e o que dá pra fazer no privado (no máximo 1 resposta por minuto para cada pessoa) |
 
 O menu "/" do Telegram mostra a lista certa em cada lugar: comandos de usuário no privado, comandos de admin no chat de admins e no privado dos admins, e só o `/help` nos grupos.
 
