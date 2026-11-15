@@ -6,6 +6,4 @@ dist/
 coverage/
 *.Zone.Identifier
 
-# Spec local (não versionado)
-flavinhobot-spec.md
 *:Zone.Identifier
