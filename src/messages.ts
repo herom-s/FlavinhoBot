@@ -93,6 +93,10 @@ export const msg = {
   statusNaoVerificado:
     "Você ainda não pegou o cordão, jovem 👀 Manda /start pra verificar pela Intra.",
   links: "Links úteis da comunidade 👇",
+  grupos: "Os grupos da 42 Comunidade 👇",
+  semDescricao: "<i>(sem descrição ainda)</i>",
+  gruposVerificado: "Quer entrar? Toca no botão que eu gero seus convites 🎟️",
+  gruposNaoVerificado: "Pra entrar, primeiro pega o cordão: manda /start 😉",
   privacidade:
     "🔒 <b>Privacidade (LGPD)</b>\n\n" +
     "<b>O que eu guardo:</b> seu ID e @ do Telegram, seu login e ID da Intra, seu status " +

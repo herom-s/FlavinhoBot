@@ -101,7 +101,8 @@ Na ordem:
 2. Recusa pedidos parados há mais de `JOIN_REQUEST_TIMEOUT_HOURS` e avisa o usuário.
 3. Revalida os membros com checagem mais antiga que `REVERIFY_DAYS`, começando pelos mais antigos, usando token de app (`client_credentials`) e `GET /v2/users/:id`.
 4. Depois do prazo do `/avisar`, lista ou remove quem foi visto nos grupos sem verificar.
-5. Manda um resumo para os admins, se algo relevante aconteceu.
+5. Atualiza título e descrição dos grupos com o orçamento que sobrou (o Telegram não avisa quando a descrição muda).
+6. Manda um resumo para os admins, se algo relevante aconteceu.
 
 Quem deixa de ser elegível recebe `revoked_reason` e para de ser aprovado direto. Com `AUTO_REMOVE=true`, também é removido dos grupos.
 
@@ -117,7 +118,7 @@ As migrations ficam em [`migrations/`](../migrations) e são aplicadas com `wran
 | `audit_log`     | eventos (`verified`, `denied`, `approved`, `removed`...) sem dados sensíveis                              |
 | `oauth_states`  | hash SHA-256 do `state`, dono e expiração                                                                 |
 | `seen_members`  | quem falou ou entrou nos grupos protegidos                                                                |
-| `chats`         | título dos grupos, para nomear os botões de convite                                                       |
+| `chats`         | título e descrição dos grupos, copiados do Telegram. Usados pelo `/grupos` e pela mensagem de convites    |
 | `settings`      | configurações de runtime, como o prazo do `/avisar`                                                       |
 
 A `0001_init.sql` é o esquema da spec. A `0002_operational.sql` adiciona o que os fluxos precisaram.

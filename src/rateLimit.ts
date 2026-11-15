@@ -21,6 +21,10 @@ export class RateLimiter {
     return entry.count <= this.limit;
   }
 
+  clear(): void {
+    this.hits.clear();
+  }
+
   private sweep(now: number): void {
     for (const [k, v] of this.hits) if (v.resetAt <= now) this.hits.delete(k);
   }

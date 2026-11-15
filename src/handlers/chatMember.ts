@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { escapeHtml } from "../messages";
+import { refreshChatInfo } from "../services/access";
 import { isProtectedChat, type Services } from "../services/context";
 import { notifyAdmins } from "../services/telegram";
 
@@ -25,6 +26,7 @@ export function registerChatMember(bot: Bot, s: Services): void {
     const label = `<b>${escapeHtml(title)}</b> (id <code>${chat.id}</code>)`;
 
     if (newM.status === "administrator" && oldM.status !== "administrator") {
+      await refreshChatInfo(s, [chat.id]);
       await notifyAdmins(
         s,
         isProtected

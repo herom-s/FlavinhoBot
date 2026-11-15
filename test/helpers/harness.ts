@@ -143,6 +143,7 @@ export class Harness {
           id: p.chat_id,
           type: "supergroup",
           title: `Chat ${p.chat_id}`,
+          description: `Sobre o chat ${p.chat_id}`,
           accent_color_id: 0,
           max_reaction_count: 0,
           accepted_gift_types: {},

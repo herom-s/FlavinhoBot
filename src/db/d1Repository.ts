@@ -1,5 +1,6 @@
 import type {
   AuditEntry,
+  ChatInfo,
   AuditEvent,
   JoinRequestRecord,
   MemberRecord,
@@ -416,6 +417,27 @@ export class D1Repository implements Repository {
       .bind(...chatIds)
       .all<{ chat_id: number; title: string | null }>();
     return new Map(results.filter((r) => r.title).map((r) => [r.chat_id, r.title as string]));
+  }
+
+  async setChatDescription(chatId: number, description: string | null, at: string) {
+    await this.db
+      .prepare(
+        `INSERT INTO chats (chat_id, title, description, updated_at) VALUES (?, NULL, ?, ?)
+         ON CONFLICT (chat_id) DO UPDATE SET description = excluded.description, updated_at = excluded.updated_at`,
+      )
+      .bind(chatId, description, at)
+      .run();
+  }
+
+  async getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>> {
+    if (chatIds.length === 0) return new Map();
+    const { results } = await this.db
+      .prepare(
+        `SELECT chat_id, title, description FROM chats WHERE chat_id IN (${chatIds.map(() => "?").join(",")})`,
+      )
+      .bind(...chatIds)
+      .all<{ chat_id: number; title: string | null; description: string | null }>();
+    return new Map(results.map((r) => [r.chat_id, { title: r.title, description: r.description }]));
   }
 
   async getSetting(key: string): Promise<string | null> {

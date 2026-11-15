@@ -176,6 +176,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
         const chat = await s.api.getChat(chatId);
         const title = "title" in chat && chat.title ? chat.title : String(chatId);
         await s.repo.upsertChat(chatId, title, nowIso);
+        await s.repo.setChatDescription(chatId, chat.description?.trim() || null, nowIso);
         const me = await s.api.getChatMember(chatId, ctx.me.id);
         if (me.status !== "administrator") {
           lines.push(`❌ ${escapeHtml(title)} (<code>${chatId}</code>): não sou admin`);
@@ -188,7 +189,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
         lines.push(
           missing.length
             ? `⚠️ ${escapeHtml(title)} (<code>${chatId}</code>): falta ${missing.join(", ")}${pub}${extra}`
-            : `✅ ${escapeHtml(title)} (<code>${chatId}</code>)${pub}${extra}`,
+            : `✅ ${escapeHtml(title)} (<code>${chatId}</code>)${pub}${extra}${chat.description ? "" : " · sem descrição"}`,
         );
       } catch (err) {
         lines.push(

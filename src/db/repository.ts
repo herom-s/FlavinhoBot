@@ -44,6 +44,11 @@ export interface SeenMemberRecord {
   firstSeenAt: string;
 }
 
+export interface ChatInfo {
+  title: string | null;
+  description: string | null;
+}
+
 export interface AuditEntry {
   telegramId?: number | null;
   intraLogin?: string | null;
@@ -114,6 +119,8 @@ export interface Repository {
   deleteSeen(telegramId: number): Promise<void>;
   upsertChat(chatId: number, title: string | null, at: string): Promise<void>;
   getChatTitles(chatIds: number[]): Promise<Map<number, string>>;
+  setChatDescription(chatId: number, description: string | null, at: string): Promise<void>;
+  getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>>;
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;
 }

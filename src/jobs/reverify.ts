@@ -7,6 +7,7 @@ import { decidirAcesso, type EligibilityResult } from "../domain/eligibility";
 import { GRANDFATHER_KEY } from "../handlers/commands.admin";
 import { errorMessage, hashId, log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
+import { refreshChatInfo } from "../services/access";
 import { eligibilityConfig, isAdmin, type Services } from "../services/context";
 import { notifyAdmins, removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
@@ -73,6 +74,7 @@ export interface DailyReport {
   revoked: string[];
   unverifiedAlerted: number;
   unverifiedRemoved: number;
+  chatsRefreshed: number;
   budgetLeft: number;
 }
 
@@ -86,6 +88,7 @@ export async function runDailyJobs(s: Services, subrequestBudget = 45): Promise<
     revoked: [],
     unverifiedAlerted: 0,
     unverifiedRemoved: 0,
+    chatsRefreshed: 0,
     budgetLeft: 0,
   };
   const chatsCount = s.config.protectedChatIds.length;
@@ -172,7 +175,13 @@ export async function runDailyJobs(s: Services, subrequestBudget = 45): Promise<
     }
   }
 
-  // 4. Resumo para os admins (só se houver algo relevante).
+  // 4. Atualiza título e descrição dos grupos com o orçamento que sobrou (o Telegram não avisa
+  // quando a descrição muda). O que não couber hoje fica para amanhã.
+  const toRefresh = s.config.protectedChatIds.slice(0, Math.max(0, budget.left));
+  budget.take(toRefresh.length);
+  report.chatsRefreshed = await refreshChatInfo(s, toRefresh);
+
+  // 5. Resumo para os admins (só se houver algo relevante).
   const parts: string[] = [];
   if (report.revoked.length) {
     parts.push(

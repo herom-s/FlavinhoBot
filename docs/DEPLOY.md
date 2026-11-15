@@ -23,7 +23,7 @@ No [@BotFather](https://t.me/BotFather):
 1. `/newbot`, com o nome **FlavinhoBot** e o username **@FlavinhoBot**. Se estiver ocupado, tente `@Flavinho42Bot` ou `@Flavinho42SPBot` (o username precisa terminar em `bot`). Guarde o **token**.
 2. `/setdescription` e `/setabouttext`. Exemplo: _"Porteiro da 42 Comunidade. Confirma pela Intra que você é cadete ou alumni e libera a entrada."_
 3. `/setuserpic`, com a foto da comunidade.
-4. `/setprivacy` → **Enable**. Como o bot é admin nos grupos, ele recebe as mensagens mesmo assim, e é isso que permite registrar quem fala (passo 9).
+4. `/setprivacy` → **Enable**. Como o bot é admin nos grupos, ele recebe as mensagens mesmo assim, e é isso que permite registrar quem fala (passo 10).
 
 Os comandos de usuário são registrados pelo próprio deploy, então não precisa usar o `/setcommands`.
 
@@ -148,15 +148,23 @@ Coloque os IDs na variável `PROTECTED_CHAT_IDS` do environment `production`, se
 
 Para proteger um grupo novo no futuro é só repetir os passos 6 e 7, sem mexer no código.
 
-## 8. Conferir as permissões
+## 8. Descrever cada grupo
+
+O bot explica os grupos para os membros com o `/grupos` e na mensagem de convites. O texto vem da **descrição do próprio grupo no Telegram**: em cada grupo, vá em **Editar → Descrição** e escreva do que ele trata (até 255 caracteres). Exemplo para Eventos:
+
+> Divulgação de eventos da 42 SP e da comunidade: palestras, hackathons, encontros. Avisos importantes ficam fixados.
+
+Depois de editar, mande `/sincronizar` para o bot atualizar na hora. Se esquecer, ele atualiza sozinho no cron diário.
+
+## 9. Conferir as permissões
 
 No privado com o bot, mande `/sincronizar`. Para cada grupo protegido ele responde:
 
-- ✅ tudo certo
+- ✅ tudo certo (com o aviso "sem descrição" se o grupo ainda não tiver descrição)
 - ⚠️ falta alguma permissão, ou o grupo é público
 - ❌ o bot não é admin ou não tem acesso
 
-## 9. Cuidar de quem já estava nos grupos
+## 10. Cuidar de quem já estava nos grupos
 
 A API do Telegram não lista os membros de um grupo. Por isso o bot registra quem fala ou entra depois que ele chega.
 

@@ -5,6 +5,7 @@ import { RateLimiter } from "../rateLimit";
 import {
   approvePending,
   CB_INVITES,
+  groupLines,
   isVerified,
   linksKeyboard,
   sendInvites,
@@ -21,6 +22,7 @@ const limiter = new RateLimiter(15, 60_000);
 export const USER_COMMANDS = [
   { command: "start", description: "Verificar pela Intra e entrar na comunidade" },
   { command: "status", description: "Ver se você está verificado" },
+  { command: "grupos", description: "Os grupos da comunidade e do que cada um trata" },
   { command: "links", description: "Links úteis da comunidade" },
   { command: "privacidade", description: "Quais dados eu guardo e por quê" },
   { command: "apagar_dados", description: "Apagar seus dados e sair dos grupos" },
@@ -66,6 +68,39 @@ export function registerUserCommands(bot: Bot, s: Services): void {
     }
     const ate = new Date(Date.parse(member.lastCheckedAt) + s.config.reverifyDays * 86_400_000);
     await sendDm(s.api, ctx.chat.id, msg.statusVerificado(member.intraLogin, member.status, ate));
+  });
+
+  priv.command("grupos", async (ctx) => {
+    const chatIds = s.config.protectedChatIds;
+    if (chatIds.length === 0)
+      return void (await sendDm(s.api, ctx.chat.id, msg.semChatsProtegidos));
+    const lines = groupLines(chatIds, await s.repo.getChatInfo(chatIds));
+    const verified = await isVerified(s, ctx.from.id);
+
+    // Quebra em várias mensagens se passar do limite de 4096 caracteres do Telegram.
+    const chunks: string[] = [];
+    let current: string = msg.grupos;
+    for (const line of lines) {
+      if (current.length + line.length + 2 > 3800) {
+        chunks.push(current);
+        current = line;
+      } else {
+        current += `\n\n${line}`;
+      }
+    }
+    chunks.push(`${current}\n\n${verified ? msg.gruposVerificado : msg.gruposNaoVerificado}`);
+
+    for (const [i, text] of chunks.entries()) {
+      const last = i === chunks.length - 1;
+      await sendDm(
+        s.api,
+        ctx.chat.id,
+        text,
+        last && verified
+          ? { reply_markup: new InlineKeyboard().text(msg.botaoConvites, CB_INVITES) }
+          : {},
+      );
+    }
   });
 
   priv.command("links", async (ctx) => {

@@ -4,7 +4,7 @@
 import { InlineKeyboard } from "grammy";
 import links from "../../config/links.json";
 import { authStartUrl, createState } from "../auth/oauth";
-import type { MemberRecord, OAuthStateRecord } from "../db/repository";
+import type { ChatInfo, MemberRecord, OAuthStateRecord } from "../db/repository";
 import {
   decidirAcesso,
   membroVerificado,
@@ -181,6 +181,43 @@ export async function approvePending(s: Services, telegramId: number): Promise<v
   }
 }
 
+/** Busca título e descrição atuais de cada grupo no Telegram (1 chamada por grupo). */
+export async function refreshChatInfo(s: Services, chatIds: number[]): Promise<number> {
+  let refreshed = 0;
+  const nowIso = s.now().toISOString();
+  for (const chatId of chatIds) {
+    try {
+      const chat = await s.api.getChat(chatId);
+      const title = "title" in chat && chat.title ? chat.title : null;
+      await s.repo.upsertChat(chatId, title, nowIso);
+      await s.repo.setChatDescription(chatId, chat.description?.trim() || null, nowIso);
+      refreshed++;
+    } catch (err) {
+      log.warn("chat_refresh_failed", { chat_id: chatId, error: String(err).slice(0, 200) });
+    }
+  }
+  return refreshed;
+}
+
+const truncate = (text: string, max: number): string =>
+  text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+
+/** Uma linha por grupo: nome em negrito e a descrição do grupo no Telegram. */
+export function groupLines(
+  chatIds: number[],
+  info: Map<number, ChatInfo>,
+  maxDescription = 255,
+): string[] {
+  return chatIds.map((chatId) => {
+    const chat = info.get(chatId);
+    const title = escapeHtml(chat?.title ?? `Grupo ${chatId}`);
+    const description = chat?.description
+      ? escapeHtml(truncate(chat.description, maxDescription))
+      : msg.semDescricao;
+    return `• <b>${title}</b>\n${description}`;
+  });
+}
+
 /** Gera um convite de uso único (15 min) para cada chat protegido e manda no privado. */
 export async function sendInvites(s: Services, telegramId: number): Promise<void> {
   const chatIds = s.config.protectedChatIds;
@@ -188,10 +225,10 @@ export async function sendInvites(s: Services, telegramId: number): Promise<void
     await sendDm(s.api, telegramId, msg.semChatsProtegidos);
     return;
   }
-  const titles = await s.repo.getChatTitles(chatIds);
+  const info = await s.repo.getChatInfo(chatIds);
   const expireDate = Math.floor(s.now().getTime() / 1000) + INVITE_TTL_MINUTES * 60;
   const kb = new InlineKeyboard();
-  let failed = 0;
+  const created: number[] = [];
   for (const chatId of chatIds) {
     try {
       const link = await s.api.createChatInviteLink(chatId, {
@@ -199,14 +236,24 @@ export async function sendInvites(s: Services, telegramId: number): Promise<void
         expire_date: expireDate,
         name: `flavinho ${hashId(telegramId)}`,
       });
-      kb.url(titles.get(chatId) ?? `Grupo ${chatId}`, link.invite_link).row();
+      kb.url(info.get(chatId)?.title ?? `Grupo ${chatId}`, link.invite_link).row();
+      created.push(chatId);
     } catch (err) {
-      failed++;
       log.warn("invite_failed", { chat_id: chatId, error: String(err).slice(0, 200) });
     }
   }
-  if (failed < chatIds.length) {
-    await sendDm(s.api, telegramId, msg.convites(INVITE_TTL_MINUTES), { reply_markup: kb });
+  const failed = chatIds.length - created.length;
+  if (created.length > 0) {
+    // Descrições encurtadas para caber numa mensagem só (limite de 4096 caracteres).
+    const lines = groupLines(created, info, 120);
+    await sendDm(
+      s.api,
+      telegramId,
+      `${msg.convites(INVITE_TTL_MINUTES)}\n\n${lines.join("\n\n")}`,
+      {
+        reply_markup: kb,
+      },
+    );
   }
   if (failed > 0) {
     await sendDm(s.api, telegramId, msg.conviteFalhou(failed));

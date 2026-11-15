@@ -14,6 +14,12 @@ import { button, page, paragraph } from "./html";
 const ipLimiter = new RateLimiter(30, 60_000);
 const userLimiter = new RateLimiter(10, 60_000);
 
+/** Só para testes: os limites são por isolate e seriam compartilhados entre casos de teste. */
+export function resetAuthRateLimits(): void {
+  ipLimiter.clear();
+  userLimiter.clear();
+}
+
 const clientIp = (req: Request): string => req.headers.get("cf-connecting-ip") ?? "unknown";
 
 const stripHtml = (s: string): string => s.replace(/<[^>]+>/g, "");

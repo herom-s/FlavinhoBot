@@ -84,6 +84,7 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | --------------- | ------------------------------------------------------------------------------ |
 | `/start`        | explica o bot e inicia a verificação (ou entrega os convites, se já verificou) |
 | `/status`       | mostra se você está verificado e até quando                                    |
+| `/grupos`       | lista os grupos da comunidade e do que cada um trata                           |
 | `/links`        | links úteis da comunidade                                                      |
 | `/privacidade`  | quais dados o bot guarda e por quê                                             |
 | `/apagar_dados` | apaga seus dados e tira você dos grupos                                        |

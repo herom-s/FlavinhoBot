@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IntraUser } from "../src/domain/eligibility";
+import { resetAuthRateLimits } from "../src/http/authRoutes";
 import { runDailyJobs } from "../src/jobs/reverify";
 import blackhole from "./fixtures/blackhole.json";
 import cadete from "./fixtures/cadete.json";
@@ -25,6 +26,7 @@ const clone = (f: unknown) => structuredClone(f) as IntraUser;
 
 let logs: string[];
 beforeEach(() => {
+  resetAuthRateLimits();
   logs = [];
   for (const m of ["log", "warn", "error"] as const) {
     vi.spyOn(console, m).mockImplementation((...a: unknown[]) => void logs.push(a.join(" ")));
@@ -252,6 +254,48 @@ describe("fluxo /start", () => {
     expect(await h.repo.getMember(USER)).toBeNull();
     expect(h.callsOf("unbanChatMember")).toHaveLength(2);
     expect(h.sqlite.dumpAll()).not.toContain("cadete");
+  });
+});
+
+describe("descrição dos grupos", () => {
+  it("/grupos explica cada grupo com a descrição do Telegram (atualizada no /sincronizar)", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, "/sincronizar"));
+    await h.update(privateCommand(USER, "/grupos"));
+    const reply = h.callsOf("sendMessage").at(-1)!;
+    const text = String(reply.payload.text);
+    expect(text).toContain(`<b>Chat ${CHAT_A}</b>\nSobre o chat ${CHAT_A}`);
+    expect(text).toContain(`<b>Chat ${CHAT_B}</b>\nSobre o chat ${CHAT_B}`);
+    expect(text).toContain("/start");
+    expect(reply.payload.reply_markup).toBeUndefined();
+  });
+
+  it("grupo sem descrição aparece como tal, e verificado ganha o botão de convites", async () => {
+    const h = new Harness();
+    h.me = clone(cadete);
+    await verifyViaJoinRequest(h, USER, CHAT_A);
+    await h.update(privateCommand(USER, "/grupos"));
+    const reply = h.callsOf("sendMessage").at(-1)!;
+    expect(String(reply.payload.text)).toContain("sem descrição ainda");
+    expect(JSON.stringify(reply.payload.reply_markup)).toContain('"callback_data":"invites"');
+  });
+
+  it("a mensagem de convites também explica os grupos", async () => {
+    const h = new Harness();
+    h.me = clone(cadete);
+    await h.update(privateCommand(ADMIN_ID, "/sincronizar"));
+    await verifyViaJoinRequest(h, USER, CHAT_A);
+    await h.update(callbackQuery(USER, "invites"));
+    const invites = h.callsOf("sendMessage").at(-1)!;
+    expect(String(invites.payload.text)).toContain(`Sobre o chat ${CHAT_B}`);
+  });
+
+  it("o cron atualiza as descrições com o orçamento que sobra", async () => {
+    const h = new Harness();
+    const report = await runDailyJobs(h.app.services);
+    expect(report.chatsRefreshed).toBe(2);
+    const info = await h.repo.getChatInfo([CHAT_A]);
+    expect(info.get(CHAT_A)?.description).toBe(`Sobre o chat ${CHAT_A}`);
   });
 });
 
