@@ -7,6 +7,7 @@ import type { Repository } from "./db/repository";
 import { registerAdminCommands } from "./handlers/commands.admin";
 import { registerUserCommands } from "./handlers/commands.user";
 import { registerChatMember } from "./handlers/chatMember";
+import { registerHelp } from "./handlers/help";
 import { registerJoinRequest } from "./handlers/joinRequest";
 import type { Services } from "./services/context";
 import { reportError } from "./services/telegram";
@@ -51,6 +52,7 @@ export function createApp(opts: AppOptions): App {
 
   registerChatMember(bot, services); // primeiro: só observa e chama next()
   registerJoinRequest(bot, services);
+  registerHelp(bot, services);
   registerAdminCommands(bot, services);
   registerUserCommands(bot, services);
 

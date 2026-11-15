@@ -19,16 +19,6 @@ const CB_DELETE_NO = "apagar:nao";
 
 const limiter = new RateLimiter(15, 60_000);
 
-export const USER_COMMANDS = [
-  { command: "start", description: "Verificar pela Intra e entrar na comunidade" },
-  { command: "status", description: "Ver se você está verificado" },
-  { command: "grupos", description: "Os grupos da comunidade e do que cada um trata" },
-  { command: "links", description: "Links úteis da comunidade" },
-  { command: "privacidade", description: "Quais dados eu guardo e por quê" },
-  { command: "apagar_dados", description: "Apagar seus dados e sair dos grupos" },
-  { command: "ajuda", description: "Como falar com um admin" },
-] as const;
-
 export function registerUserCommands(bot: Bot, s: Services): void {
   const priv = bot.chatType("private");
 

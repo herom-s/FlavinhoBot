@@ -89,11 +89,13 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/privacidade`  | quais dados o bot guarda e por quê                                             |
 | `/apagar_dados` | apaga seus dados e tira você dos grupos                                        |
 | `/ajuda`        | como falar com um admin                                                        |
+| `/help`         | lista os comandos                                                              |
 
 **Para admins** (só no privado ou no chat de admins; para os outros, o bot não responde)
 
 | Comando                   | O que faz                                                |
 | ------------------------- | -------------------------------------------------------- |
+| `/help`                   | lista os comandos de admin                               |
 | `/stats`                  | membros por status, pedidos pendentes, negados em 7 dias |
 | `/quem <@user \| login>`  | situação de um membro                                    |
 | `/allow <login> <motivo>` | libera um caso especial                                  |
@@ -104,6 +106,14 @@ Admins podem abrir exceções com `/allow` e bloquear com `/deny`.
 | `/nao_verificados`        | quem foi visto nos grupos e ainda não verificou          |
 | `/avisar`                 | fixa nos grupos o aviso para membros antigos verificarem |
 | `/chatid`                 | mostra o ID do chat (útil no setup)                      |
+
+**Nos grupos protegidos**
+
+| Comando | O que faz                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------- |
+| `/help` | explica o que é o bot e o que dá pra fazer no privado (no máximo 1 resposta por minuto por grupo) |
+
+O menu "/" do Telegram mostra a lista certa em cada lugar: comandos de usuário no privado, comandos de admin no chat de admins e no privado dos admins, e só o `/help` nos grupos.
 
 ## Começando
 

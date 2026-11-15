@@ -230,6 +230,20 @@ export const privateCommand = (userId: number, text: string) => {
   };
 };
 
+export const groupCommand = (userId: number, chatId: number, text: string) => {
+  const cmd = text.split(" ")[0]!;
+  return {
+    message: {
+      message_id: 50,
+      date: 0,
+      chat: { id: chatId, type: "supergroup", title: `Chat ${chatId}` },
+      from: tgUser(userId, `user${userId}`),
+      text,
+      entities: [{ type: "bot_command", offset: 0, length: cmd.length }],
+    },
+  };
+};
+
 export const callbackQuery = (userId: number, data: string) => ({
   callback_query: {
     id: "cb1",

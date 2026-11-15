@@ -2,6 +2,7 @@
  * Todos os textos do FlavinhoBot. Mensagens do Telegram usam parse_mode HTML.
  * Regra do bordão: "elegante" só aparece quando falta acesso — nunca em mensagens de sucesso.
  */
+import type { CommandInfo } from "./commands";
 import type { DenyReason } from "./domain/eligibility";
 
 export const escapeHtml = (s: string): string =>
@@ -143,6 +144,47 @@ export const msg = {
   paginaCancelada: "Login cancelado. Quando quiser, é só mandar /start no Telegram.",
   paginaRateLimited: "Muitas tentativas seguidas. Espera um minutinho e tenta de novo.",
 } as const;
+
+const commandList = (list: CommandInfo[], suffix = ""): string =>
+  list
+    .map(
+      (c) =>
+        `/${c.command}${suffix}${c.usage ? ` ${escapeHtml(c.usage)}` : ""}: ${escapeHtml(c.description)}`,
+    )
+    .join("\n");
+
+export const help = {
+  /** Admin, no privado ou no chat de admins. Em grupo, os comandos precisam do @ do bot. */
+  admin: (commands: CommandInfo[], botUsername: string, inGroup: boolean): string =>
+    "🛠️ <b>Comandos de admin</b>\n\n" +
+    commandList(commands, inGroup ? `@${botUsername}` : "") +
+    "\n\n" +
+    (inGroup
+      ? `Aqui no grupo, use o @ do bot no comando (ex.: <code>/stats@${escapeHtml(botUsername)}</code>).`
+      : "Esses comandos funcionam aqui no privado e no chat de admins.") +
+    "\nPara mudar a descrição de um grupo, edite a descrição no próprio Telegram e rode /sincronizar.",
+
+  /** Membro comum, no privado. */
+  usuario: (commands: CommandInfo[]): string =>
+    "Fala, jovem! 👋 Isso aqui é o que eu sei fazer:\n\n" +
+    commandList(commands) +
+    "\n\nTravou em algo? Manda /ajuda.",
+
+  /** Dentro de um grupo protegido (visível para todos do grupo). */
+  grupo: (botUsername: string): string => {
+    const bot = escapeHtml(botUsername);
+    return (
+      "Oi, jovens! 👋 Eu sou o <b>Flavinho</b>, o porteiro da 42 Comunidade. " +
+      "Todo mundo aqui passou pela verificação da Intra: só entra cadete ou alumni da 42.\n\n" +
+      `No meu privado (@${bot}) dá pra:\n` +
+      "• /grupos: ver todos os grupos da comunidade e do que cada um trata\n" +
+      "• /start: pegar convites para os outros grupos\n" +
+      "• /status: ver até quando vale sua verificação\n" +
+      "• /privacidade e /apagar_dados: seus dados, suas regras\n\n" +
+      "Dúvidas ou problemas? Fala com um admin."
+    );
+  },
+};
 
 /** Texto curto para logs/admins (sem PII). */
 export const motivoAdmin: Record<DenyReason, string> = {

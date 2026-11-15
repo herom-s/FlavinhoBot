@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IntraUser } from "../src/domain/eligibility";
+import { resetHelpRateLimit } from "../src/handlers/help";
 import { resetAuthRateLimits } from "../src/http/authRoutes";
 import { runDailyJobs } from "../src/jobs/reverify";
 import blackhole from "./fixtures/blackhole.json";
@@ -13,6 +14,7 @@ import {
   CHAT_A,
   CHAT_B,
   callbackQuery,
+  groupCommand,
   Harness,
   joinRequestUpdate,
   privateCommand,
@@ -27,6 +29,7 @@ const clone = (f: unknown) => structuredClone(f) as IntraUser;
 let logs: string[];
 beforeEach(() => {
   resetAuthRateLimits();
+  resetHelpRateLimit();
   logs = [];
   for (const m of ["log", "warn", "error"] as const) {
     vi.spyOn(console, m).mockImplementation((...a: unknown[]) => void logs.push(a.join(" ")));
@@ -296,6 +299,60 @@ describe("descrição dos grupos", () => {
     expect(report.chatsRefreshed).toBe(2);
     const info = await h.repo.getChatInfo([CHAT_A]);
     expect(info.get(CHAT_A)?.description).toBe(`Sobre o chat ${CHAT_A}`);
+  });
+});
+
+describe("/help", () => {
+  const lastText = (h: Harness) => String(h.callsOf("sendMessage").at(-1)?.payload.text ?? "");
+
+  it("admin no privado recebe os comandos de admin", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, "/help"));
+    expect(lastText(h)).toContain("Comandos de admin");
+    expect(lastText(h)).toContain("/allow &lt;login&gt; &lt;motivo&gt;");
+    expect(lastText(h)).not.toContain("/allow@");
+  });
+
+  it("admin no chat de admins recebe os comandos com o @ do bot", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, ADMIN_CHAT, "/help@FlavinhoBot"));
+    const reply = h.callsOf("sendMessage").at(-1)!;
+    expect(reply.payload.chat_id).toBe(ADMIN_CHAT);
+    expect(lastText(h)).toContain("/stats@FlavinhoBot");
+  });
+
+  it("membro no privado recebe só os comandos de usuário", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(USER, "/help"));
+    expect(lastText(h)).toContain("/grupos");
+    expect(lastText(h)).not.toContain("/allow");
+  });
+
+  it("no grupo protegido explica o bot, respondendo à mensagem, no máximo 1x por minuto", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(USER, CHAT_A, "/help"));
+    const reply = h.callsOf("sendMessage").at(-1)!;
+    expect(reply.payload.chat_id).toBe(CHAT_A);
+    expect(reply.payload.reply_parameters).toMatchObject({ message_id: 50 });
+    expect(lastText(h)).toContain("porteiro");
+    expect(lastText(h)).toContain("@FlavinhoBot");
+    expect(lastText(h)).not.toContain("/allow");
+
+    await h.update(groupCommand(USER + 1, CHAT_A, "/help"));
+    expect(h.callsOf("sendMessage")).toHaveLength(1);
+  });
+
+  it("admin pedindo /help num grupo protegido recebe a explicação pública, não a de admin", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(ADMIN_ID, CHAT_B, "/help"));
+    expect(lastText(h)).toContain("porteiro");
+    expect(lastText(h)).not.toContain("Comandos de admin");
+  });
+
+  it("ignora /help em grupos que não são da comunidade", async () => {
+    const h = new Harness();
+    await h.update(groupCommand(USER, -777, "/help"));
+    expect(h.calls).toHaveLength(0);
   });
 });
 
