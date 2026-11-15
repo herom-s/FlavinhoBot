@@ -158,6 +158,12 @@ export async function completeVerification(
       await sendDm(s.api, telegramId, msg.aprovado(user.login), {
         reply_markup: linksKeyboard(true),
       });
+      await recordMemberships(
+        s,
+        telegramId,
+        state.telegramUsername,
+        protectedIds.filter((id) => !pending.has(id)),
+      );
       for (const chatId of pending) {
         if (await safeApprove(s.api, chatId, telegramId)) {
           await s.repo.audit(
@@ -170,6 +176,32 @@ export async function completeVerification(
       }
     },
   };
+}
+
+/**
+ * Registra em quais grupos protegidos a pessoa já está (quem entrou antes do bot e verificou
+ * pelo /start nunca passou por um join request). Alimenta a contagem "com cordão" do /stats.
+ */
+async function recordMemberships(
+  s: Services,
+  telegramId: number,
+  username: string | null,
+  chatIds: number[],
+): Promise<void> {
+  const nowIso = s.now().toISOString();
+  for (const chatId of chatIds) {
+    try {
+      const m = await s.api.getChatMember(chatId, telegramId);
+      const inside =
+        m.status === "member" ||
+        m.status === "administrator" ||
+        m.status === "creator" ||
+        (m.status === "restricted" && m.is_member);
+      if (inside) await s.repo.markSeen(telegramId, chatId, username, nowIso);
+    } catch {
+      // sem acesso ao grupo: o /sincronizar mostra o problema
+    }
+  }
 }
 
 /** Aprova direto todos os pedidos pendentes de quem já está verificado. */

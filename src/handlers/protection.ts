@@ -46,7 +46,7 @@ const adminName = (ctx: Context): string =>
 export function registerProtection(bot: Bot, s: Services): void {
   // Botões: qualquer admin, em qualquer chat (normalmente o chat de admins).
   bot.callbackQuery(CALLBACK_RE, async (ctx) => {
-    if (!isAdmin(s, ctx.from.id)) {
+    if (!(await isAdmin(s, ctx.from.id))) {
       await ctx.answerCallbackQuery({ text: msg.soAdmins, show_alert: true });
       return;
     }
@@ -64,9 +64,9 @@ export function registerProtection(bot: Bot, s: Services): void {
   });
 
   const admin = bot.filter(
-    (ctx) =>
-      isAdmin(s, ctx.from?.id) &&
-      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId),
+    async (ctx) =>
+      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId) &&
+      (await isAdmin(s, ctx.from?.id)),
   );
 
   // /proteger: lista os grupos conhecidos ainda não protegidos, com um botão para cada.

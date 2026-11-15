@@ -3,7 +3,7 @@ import type { MemberRecord } from "../db/repository";
 import type { DenyReason } from "../domain/eligibility";
 import { reverifyMember } from "../jobs/reverify";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
-import { isAdmin, protectedChatIds, type Services } from "../services/context";
+import { adminIds, isAdmin, protectedChatIds, type Services } from "../services/context";
 import { removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
 export const GRANDFATHER_KEY = "grandfather_deadline";
@@ -36,6 +36,35 @@ function describeMember(m: MemberRecord, denied: boolean, override: string | nul
     .join("\n");
 }
 
+/**
+ * Membros por grupo: o total vem do Telegram (getChatMemberCount); "com cordão" são os que o bot
+ * sabe que estão no grupo e têm verificação válida. A API não lista membros, então quem nunca
+ * falou nem verificou só aparece no total.
+ */
+async function groupCounts(s: Services): Promise<string[]> {
+  const ids = await protectedChatIds(s);
+  if (ids.length === 0) return ["Nenhum grupo protegido."];
+  const [titles, seen] = await Promise.all([s.repo.getChatTitles(ids), s.repo.countSeenByChat()]);
+  const lines: string[] = [];
+  for (const chatId of ids) {
+    const title = escapeHtml(titles.get(chatId) ?? String(chatId));
+    try {
+      const total = Math.max(0, (await s.api.getChatMemberCount(chatId)) - 1); // sem o próprio bot
+      const known = seen.get(chatId) ?? { seen: 0, verified: 0 };
+      const withCord = Math.min(known.verified, total);
+      lines.push(
+        `• <b>${title}</b>: ${total} membros · ✅ ${withCord} com cordão · ❌ ${total - withCord} sem cordão`,
+      );
+    } catch {
+      lines.push(`• <b>${title}</b>: não consegui contar (rode /sincronizar)`);
+    }
+  }
+  lines.push(
+    "<i>“Sem cordão” inclui quem nunca falou nem verificou; mande /avisar para chamá-los.</i>",
+  );
+  return lines;
+}
+
 export function registerAdminCommands(bot: Bot, s: Services): void {
   // Admin em qualquer chat: só para descobrir IDs durante o setup.
   bot
@@ -46,9 +75,9 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
 
   // Demais comandos: admin + (privado ou chat de admins). Não-admin cai fora sem resposta.
   const admin = bot.filter(
-    (ctx) =>
-      isAdmin(s, ctx.from?.id) &&
-      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId),
+    async (ctx) =>
+      (ctx.chat?.type === "private" || ctx.chat?.id === s.config.adminChatId) &&
+      (await isAdmin(s, ctx.from?.id)),
   );
   const reply = (ctx: Context, text: string) => sendDm(s.api, ctx.chat!.id, text);
 
@@ -60,6 +89,7 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
       s.repo.countAuditSince("denied", new Date(now.getTime() - 7 * 86_400_000).toISOString()),
       s.repo.listUnverifiedSeen(1000),
     ]);
+    const admins = await adminIds(s);
     const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
     await reply(
       ctx,
@@ -73,7 +103,10 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
         `Revogados: ${byStatus.revogado ?? 0}`,
         `Pedidos pendentes: ${pendentes}`,
         `Negados (7 dias): ${negados}`,
-        `Vistos sem verificação: ${naoVerificados.filter((u) => !isAdmin(s, u.telegramId)).length}`,
+        `Vistos sem verificação: ${naoVerificados.filter((u) => !admins.includes(u.telegramId)).length}`,
+        "",
+        "👥 <b>Por grupo</b>",
+        ...(await groupCounts(s)),
       ].join("\n"),
     );
   });
@@ -203,7 +236,10 @@ export function registerAdminCommands(bot: Bot, s: Services): void {
   });
 
   admin.command("nao_verificados", async (ctx) => {
-    const list = (await s.repo.listUnverifiedSeen(60)).filter((u) => !isAdmin(s, u.telegramId));
+    const admins = await adminIds(s);
+    const list = (await s.repo.listUnverifiedSeen(60)).filter(
+      (u) => !admins.includes(u.telegramId),
+    );
     if (list.length === 0)
       return void (await reply(ctx, "Todo mundo que eu vi está verificado ✅"));
     const deadline = await s.repo.getSetting(GRANDFATHER_KEY);

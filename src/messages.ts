@@ -118,6 +118,28 @@ export const msg = {
   nenhumParaProteger:
     "Não conheço nenhum grupo sem proteção. Me adicione como admin no grupo e eu aviso aqui.",
   nenhumProtegido: "Nenhum grupo protegido no momento.",
+
+  // ---------- admins do bot ----------
+  botaoTornarAdmin: "➕ Tornar admin",
+  adminAdicionado: (who: string, id: number, by: string) =>
+    `✅ ${escapeHtml(who)} (<code>${id}</code>) agora é admin do bot (por ${escapeHtml(by)}). ` +
+    'Os comandos já funcionam; para o menu "/" aparecer no privado, a pessoa precisa ter dado /start no bot.',
+  adminRemovido: (who: string, by: string) =>
+    `🗑️ ${escapeHtml(who)} não é mais admin do bot (por ${escapeHtml(by)}).`,
+  naoRemoverDono:
+    "Esse é um dono do bot (ADMIN_IDS no GitHub) e não pode ser removido pelo Telegram.",
+  jaEhAdmin: (who: string) => `${escapeHtml(who)} já é admin do bot.`,
+  listaAdmins: (lines: string[]) =>
+    `🛠️ <b>Admins do bot</b>\n${lines.join("\n")}\n\n` +
+    "Donos vêm do ADMIN_IDS no GitHub e não podem ser removidos aqui. " +
+    "Para adicionar: responda uma mensagem da pessoa com /novo_admin, ou /novo_admin &lt;id ou @user&gt;.",
+  usoNovoAdmin:
+    "Uso: responda uma mensagem da pessoa com /novo_admin, ou /novo_admin &lt;telegram_id&gt;, " +
+    "ou /novo_admin @user (o @ só funciona se eu já tiver visto a pessoa). " +
+    "Dica: se ela mandar /help aqui no chat de admins, aparece um botão para tornar admin.",
+  usoRemoverAdmin:
+    "Uso: responda uma mensagem da pessoa com /remover_admin, ou /remover_admin &lt;telegram_id | @user&gt;. " +
+    "Ou use /admins e toque no botão.",
   semDescricao: "<i>(sem descrição ainda)</i>",
   gruposVerificado: "Quer entrar? Toca no botão que eu gero seus convites 🎟️",
   gruposNaoVerificado: "Pra entrar, primeiro pega o cordão: manda /start 😉",
@@ -190,7 +212,7 @@ export const help = {
   /** Alguém fora de ADMIN_IDS pedindo /help no chat de admins. */
   naoAdmin: (userId: number, firstName: string): string =>
     `${escapeHtml(firstName)}, você ainda não está na lista de admins do bot, então os comandos de admin não funcionam pra você. ` +
-    `Seu ID é <code>${userId}</code>: peça para incluírem em <code>ADMIN_IDS</code>.`,
+    `Seu ID é <code>${userId}</code>: um admin pode tocar no botão abaixo para te incluir.`,
 
   /** Membro comum, no privado. */
   usuario: (commands: CommandInfo[]): string =>

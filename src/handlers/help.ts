@@ -4,6 +4,7 @@ import { help } from "../messages";
 import { RateLimiter } from "../rateLimit";
 import { isAdmin, isProtectedChat, type Services } from "../services/context";
 import { sendDm } from "../services/telegram";
+import { addAdminKeyboard } from "./admins";
 
 /** Nos grupos a resposta é pública: no máximo 1 por pessoa por grupo por minuto. */
 const groupLimiter = new RateLimiter(1, 60_000);
@@ -19,7 +20,7 @@ const groupLimiter = new RateLimiter(1, 60_000);
 export function registerHelp(bot: Bot, s: Services): void {
   bot.command("help", async (ctx) => {
     const chat = ctx.chat;
-    const fromAdmin = isAdmin(s, ctx.from?.id);
+    const fromAdmin = await isAdmin(s, ctx.from?.id);
     const username = ctx.me.username;
 
     if (chat.id === s.config.adminChatId) {
@@ -29,7 +30,10 @@ export function registerHelp(bot: Bot, s: Services): void {
         fromAdmin
           ? help.admin(ADMIN_COMMANDS, username, true)
           : help.naoAdmin(ctx.from?.id ?? 0, ctx.from?.first_name ?? "jovem"),
-        { reply_parameters: { message_id: ctx.msgId, allow_sending_without_reply: true } },
+        {
+          reply_parameters: { message_id: ctx.msgId, allow_sending_without_reply: true },
+          ...(fromAdmin || !ctx.from ? {} : { reply_markup: addAdminKeyboard(ctx.from.id) }),
+        },
       );
       return;
     }

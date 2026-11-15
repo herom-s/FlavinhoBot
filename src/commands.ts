@@ -36,6 +36,17 @@ export const ADMIN_COMMANDS: CommandInfo[] = [
   { command: "desproteger", description: "Deixar de proteger um grupo" },
   { command: "nao_verificados", description: "Quem foi visto nos grupos e não verificou" },
   { command: "avisar", description: "Fixa nos grupos o aviso para membros antigos verificarem" },
+  { command: "admins", description: "Lista os admins do bot" },
+  {
+    command: "novo_admin",
+    description: "Torna alguém admin do bot",
+    usage: "<responder | id | @user>",
+  },
+  {
+    command: "remover_admin",
+    description: "Tira alguém de admin do bot",
+    usage: "<responder | id | @user>",
+  },
   { command: "chatid", description: "Mostra o ID do chat atual" },
 ];
 

@@ -22,25 +22,36 @@ export const eligibilityConfig = (c: Config): EligibilityConfig => ({
 });
 
 /**
- * Cache por isolate da lista efetiva (o handler de mensagens consulta a cada mensagem de grupo).
- * Uma mudança feita em outro isolate aparece aqui em até PROTECTED_CACHE_MS.
+ * Cache por isolate das listas efetivas (consultadas a cada mensagem de grupo e a cada comando).
+ * Uma mudança feita em outro isolate aparece aqui em até LIST_CACHE_MS.
  */
-const PROTECTED_CACHE_MS = 60_000;
-const protectedCache = new WeakMap<Repository, { ids: number[]; expiresAt: number }>();
+const LIST_CACHE_MS = 60_000;
+type Cached = { ids: number[]; expiresAt: number };
+const protectedCache = new WeakMap<Repository, Cached>();
+const adminCache = new WeakMap<Repository, Cached>();
 
-/** Lista efetiva: PROTECTED_CHAT_IDS (env) + protegidos pelo Telegram − desprotegidos pelo Telegram. */
-export async function protectedChatIds(s: Services): Promise<number[]> {
-  const cached = protectedCache.get(s.repo);
-  if (cached && cached.expiresAt > Date.now()) return cached.ids;
-  const ids = new Set(s.config.protectedChatIds);
-  for (const p of await s.repo.listChatProtections()) {
-    if (p.protected) ids.add(p.chatId);
-    else ids.delete(p.chatId);
-  }
-  const list = [...ids];
-  protectedCache.set(s.repo, { ids: list, expiresAt: Date.now() + PROTECTED_CACHE_MS });
-  return list;
+async function cachedList(
+  s: Services,
+  cache: WeakMap<Repository, Cached>,
+  load: () => Promise<number[]>,
+): Promise<number[]> {
+  const hit = cache.get(s.repo);
+  if (hit && hit.expiresAt > Date.now()) return hit.ids;
+  const ids = await load();
+  cache.set(s.repo, { ids, expiresAt: Date.now() + LIST_CACHE_MS });
+  return ids;
 }
+
+/** Grupos protegidos: PROTECTED_CHAT_IDS (env) + protegidos pelo Telegram − desprotegidos pelo Telegram. */
+export const protectedChatIds = (s: Services): Promise<number[]> =>
+  cachedList(s, protectedCache, async () => {
+    const ids = new Set(s.config.protectedChatIds);
+    for (const p of await s.repo.listChatProtections()) {
+      if (p.protected) ids.add(p.chatId);
+      else ids.delete(p.chatId);
+    }
+    return [...ids];
+  });
 
 export const invalidateProtectedChats = (s: Services): void => {
   protectedCache.delete(s.repo);
@@ -49,5 +60,21 @@ export const invalidateProtectedChats = (s: Services): void => {
 export const isProtectedChat = async (s: Services, chatId: number): Promise<boolean> =>
   (await protectedChatIds(s)).includes(chatId);
 
-export const isAdmin = (s: Services, userId: number | undefined): boolean =>
+/** Donos: ADMIN_IDS do env. Sempre admins, não podem ser removidos pelo Telegram. */
+export const isOwner = (s: Services, userId: number | undefined): boolean =>
   userId !== undefined && s.config.adminIds.includes(userId);
+
+/** Admins: donos (env) + adicionados pelo Telegram que continuam ativos. */
+export const adminIds = (s: Services): Promise<number[]> =>
+  cachedList(s, adminCache, async () => {
+    const ids = new Set(s.config.adminIds);
+    for (const a of await s.repo.listBotAdmins()) if (a.active) ids.add(a.telegramId);
+    return [...ids];
+  });
+
+export const invalidateAdmins = (s: Services): void => {
+  adminCache.delete(s.repo);
+};
+
+export const isAdmin = async (s: Services, userId: number | undefined): Promise<boolean> =>
+  userId !== undefined && (await adminIds(s)).includes(userId);

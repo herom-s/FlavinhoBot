@@ -4,6 +4,7 @@ import { IntraClient } from "./auth/intraClient";
 import { redirectUri } from "./auth/oauth";
 import type { Config } from "./config";
 import type { Repository } from "./db/repository";
+import { registerAdmins } from "./handlers/admins";
 import { registerAdminCommands } from "./handlers/commands.admin";
 import { registerUserCommands } from "./handlers/commands.user";
 import { registerChatMember } from "./handlers/chatMember";
@@ -55,6 +56,7 @@ export function createApp(opts: AppOptions): App {
   registerJoinRequest(bot, services);
   registerHelp(bot, services);
   registerProtection(bot, services);
+  registerAdmins(bot, services);
   registerAdminCommands(bot, services);
   registerUserCommands(bot, services);
 

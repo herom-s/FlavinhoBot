@@ -454,6 +454,60 @@ export class D1Repository implements Repository {
       .run();
   }
 
+  async countSeenByChat() {
+    const { results } = await this.db
+      .prepare(
+        `SELECT s.chat_id, COUNT(*) AS seen,
+                SUM(CASE WHEN m.telegram_id IS NOT NULL AND m.revoked_reason IS NULL THEN 1 ELSE 0 END) AS verified
+         FROM seen_members s LEFT JOIN members m ON m.telegram_id = s.telegram_id
+         GROUP BY s.chat_id`,
+      )
+      .all<{ chat_id: number; seen: number; verified: number }>();
+    return new Map(results.map((r) => [r.chat_id, { seen: r.seen, verified: r.verified ?? 0 }]));
+  }
+
+  async listBotAdmins() {
+    const { results } = await this.db
+      .prepare("SELECT telegram_id, active, label FROM bot_admins ORDER BY changed_at")
+      .all<{ telegram_id: number; active: number; label: string | null }>();
+    return results.map((r) => ({
+      telegramId: r.telegram_id,
+      active: r.active === 1,
+      label: r.label,
+    }));
+  }
+
+  async setBotAdmin(
+    telegramId: number,
+    active: boolean,
+    label: string | null,
+    by: number,
+    at: string,
+  ) {
+    await this.db
+      .prepare(
+        `INSERT INTO bot_admins (telegram_id, active, label, changed_by, changed_at) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (telegram_id) DO UPDATE SET
+           active = excluded.active, label = COALESCE(excluded.label, bot_admins.label),
+           changed_by = excluded.changed_by, changed_at = excluded.changed_at`,
+      )
+      .bind(telegramId, active ? 1 : 0, label, by, at)
+      .run();
+  }
+
+  async findTelegramIdByUsername(username: string): Promise<number | null> {
+    const row = await this.db
+      .prepare(
+        `SELECT telegram_id FROM members WHERE telegram_username = ?1 COLLATE NOCASE
+         UNION ALL
+         SELECT telegram_id FROM seen_members WHERE telegram_username = ?1 COLLATE NOCASE
+         LIMIT 1`,
+      )
+      .bind(username)
+      .first<{ telegram_id: number }>();
+    return row?.telegram_id ?? null;
+  }
+
   async getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>> {
     if (chatIds.length === 0) return new Map();
     const { results } = await this.db

@@ -125,6 +125,20 @@ export interface Repository {
   /** Proteções definidas pelos admins no Telegram (vencem o PROTECTED_CHAT_IDS do env). */
   listChatProtections(): Promise<{ chatId: number; protected: boolean }[]>;
   setChatProtection(chatId: number, isProtected: boolean, by: number, at: string): Promise<void>;
+  /** Por grupo: quantos o bot já viu e quantos desses têm verificação válida (cordão). */
+  countSeenByChat(): Promise<Map<number, { seen: number; verified: number }>>;
+
+  // admins adicionados pelo Telegram
+  listBotAdmins(): Promise<{ telegramId: number; active: boolean; label: string | null }[]>;
+  setBotAdmin(
+    telegramId: number,
+    active: boolean,
+    label: string | null,
+    by: number,
+    at: string,
+  ): Promise<void>;
+  /** Procura um telegram_id pelo @ entre membros verificados e pessoas vistas nos grupos. */
+  findTelegramIdByUsername(username: string): Promise<number | null>;
   getChatInfo(chatIds: number[]): Promise<Map<number, ChatInfo>>;
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;

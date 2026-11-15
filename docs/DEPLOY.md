@@ -89,13 +89,13 @@ Dentro do environment `production`, cadastre:
 
 **Variables** (Environment variables)
 
-| Nome                 | Valor                                                                                                                       |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `PUBLIC_BASE_URL`    | `https://flavinhobot.<seu-subdominio>.workers.dev`                                                                          |
-| `D1_DATABASE_ID`     | `database_id` do passo 2.2                                                                                                  |
-| `ADMIN_IDS`          | telegram_ids dos admins, separados por vírgula                                                                              |
-| `ADMIN_CHAT_ID`      | chat que recebe os alertas. Pode ser o seu próprio telegram_id (o bot fala com você no privado) ou o ID do grupo dos admins |
-| `PROTECTED_CHAT_IDS` | deixe vazio por enquanto. Você preenche no passo 7                                                                          |
+| Nome                 | Valor                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_BASE_URL`    | `https://flavinhobot.<seu-subdominio>.workers.dev`                                                                                                                              |
+| `D1_DATABASE_ID`     | `database_id` do passo 2.2                                                                                                                                                      |
+| `ADMIN_IDS`          | telegram_id dos **donos** do bot, separados por vírgula. Donos são admins fixos: não podem ser removidos pelo Telegram. Os outros admins você adiciona depois, pelo próprio bot |
+| `ADMIN_CHAT_ID`      | chat que recebe os alertas. Pode ser o seu próprio telegram_id (o bot fala com você no privado) ou o ID do grupo dos admins                                                     |
+| `PROTECTED_CHAT_IDS` | opcional, pode nem criar. Os grupos são protegidos pelo Telegram no passo 7                                                                                                     |
 
 Para descobrir seu telegram_id, mande qualquer mensagem para o [@userinfobot](https://t.me/userinfobot). Para receber alertas no privado, mande `/start` para o seu bot uma vez.
 
@@ -143,16 +143,26 @@ Quando vira admin num grupo novo, o bot pergunta no chat de admins:
 > 🆕 Fui adicionado como admin ao chat **X** (id Y). Quer que eu proteja este grupo?
 > [✅ Proteger este grupo] [Ignorar]
 
-Qualquer admin do bot (`ADMIN_IDS`) toca em **Proteger este grupo** e pronto: a partir daí só entra quem tem o cordão. Não precisa mexer no GitHub nem fazer deploy.
+Qualquer admin do bot toca em **Proteger este grupo** e pronto: a partir daí só entra quem tem o cordão. Não precisa mexer no GitHub nem fazer deploy.
 
 Outros jeitos, também pelo Telegram:
 
 - `/proteger`: lista os grupos onde o bot já é admin e que ainda não são protegidos, com um botão para cada.
 - `/desproteger`: lista os grupos protegidos, com um botão para deixar de proteger.
 
-A variável `PROTECTED_CHAT_IDS` do GitHub continua valendo como lista inicial. O que os admins mudam pelo Telegram vale por cima dela: um grupo protegido pelo botão entra na lista, e um grupo desprotegido sai, mesmo que esteja na variável. O chat de admins nunca pode ser protegido.
+A variável `PROTECTED_CHAT_IDS` do GitHub é opcional. Se existir, vale como lista inicial, e o que os admins mudam pelo Telegram vale por cima dela. O chat de admins nunca pode ser protegido.
 
 Para proteger um grupo novo no futuro é só repetir os passos 6 e 7.
+
+### Admins do bot
+
+Os donos (`ADMIN_IDS`) podem adicionar outros admins direto pelo Telegram, e qualquer admin também:
+
+- Peça para a pessoa mandar `/help` no chat de admins. O bot responde com o ID dela e um botão **➕ Tornar admin**.
+- Ou responda uma mensagem da pessoa com `/novo_admin`, ou use `/novo_admin <telegram_id>` ou `/novo_admin @user`.
+- `/admins` lista donos e admins, com botão para remover os adicionados. `/remover_admin` também funciona.
+
+Donos não podem ser removidos pelo Telegram, para ninguém trancar o bot por engano. Para trocar os donos, edite `ADMIN_IDS` no GitHub e rode o deploy.
 
 ## 8. Descrever cada grupo
 
@@ -260,6 +270,6 @@ O `.env` está no `.gitignore`. Não commite, e não commite o `wrangler.toml` c
 
 **A Intra mostra "redirect_uri is invalid".** O Redirect URI do app precisa ser exatamente `PUBLIC_BASE_URL/auth/callback`, sem barra no final.
 
-**Pedidos de entrada não chegam.** O link do grupo precisa ter "Pedir aprovação de admin" ligado, o bot precisa ser admin com `can_invite_users` e o ID do grupo precisa estar em `PROTECTED_CHAT_IDS`. O `/sincronizar` aponta o que falta.
+**Pedidos de entrada não chegam.** O link do grupo precisa ter "Pedir aprovação de admin" ligado, o bot precisa ser admin com `can_invite_users` e o grupo precisa estar protegido (`/proteger`). O `/sincronizar` aponta o que falta.
 
 **A pessoa verificou mas não recebeu a DM.** O Telegram só deixa o bot mandar DM para quem pediu para entrar por 5 minutos e até o pedido ser processado. A página de retorno da Intra mostra o resultado de qualquer forma, e `/start` no privado entrega os convites.

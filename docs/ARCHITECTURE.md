@@ -74,7 +74,7 @@ Cada motivo de negação vira uma mensagem amigável em `messages.ts` e um texto
 
 ### Pedido de entrada
 
-1. O Telegram manda `chat_join_request`. Chats fora de `PROTECTED_CHAT_IDS` são ignorados.
+1. O Telegram manda `chat_join_request`. Chats que não estão protegidos são ignorados.
 2. Se o usuário está na denylist, o pedido é recusado.
 3. Se já está verificado (não revogado e checado há menos de `REVERIFY_DAYS`), o bot manda "já te conheço" e aprova.
 4. Senão, o pedido vai para `join_requests`, o bot cria um `state` e manda a DM com o botão de login.
@@ -110,17 +110,18 @@ Quem deixa de ser elegível recebe `revoked_reason` e para de ser aprovado diret
 
 As migrations ficam em [`migrations/`](../migrations) e são aplicadas com `wrangler d1 migrations apply`.
 
-| Tabela            | Conteúdo                                                                                                  |
-| ----------------- | --------------------------------------------------------------------------------------------------------- |
-| `members`         | um registro por Telegram verificado. `intra_id` é `UNIQUE`. `revoked_reason` nulo significa acesso válido |
-| `join_requests`   | pedidos de entrada esperando verificação                                                                  |
-| `overrides`       | allowlist e denylist por login da Intra                                                                   |
-| `audit_log`       | eventos (`verified`, `denied`, `approved`, `removed`...) sem dados sensíveis                              |
-| `oauth_states`    | hash SHA-256 do `state`, dono e expiração                                                                 |
-| `seen_members`    | quem falou ou entrou nos grupos protegidos                                                                |
-| `chats`           | título e descrição dos grupos, copiados do Telegram. Usados pelo `/grupos` e pela mensagem de convites    |
-| `protected_chats` | grupos protegidos ou desprotegidos pelos admins no Telegram. Vale por cima do `PROTECTED_CHAT_IDS`        |
-| `settings`        | configurações de runtime, como o prazo do `/avisar`                                                       |
+| Tabela            | Conteúdo                                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `members`         | um registro por Telegram verificado. `intra_id` é `UNIQUE`. `revoked_reason` nulo significa acesso válido      |
+| `join_requests`   | pedidos de entrada esperando verificação                                                                       |
+| `overrides`       | allowlist e denylist por login da Intra                                                                        |
+| `audit_log`       | eventos (`verified`, `denied`, `approved`, `removed`...) sem dados sensíveis                                   |
+| `oauth_states`    | hash SHA-256 do `state`, dono e expiração                                                                      |
+| `seen_members`    | quem falou ou entrou nos grupos protegidos                                                                     |
+| `chats`           | título e descrição dos grupos, copiados do Telegram. Usados pelo `/grupos` e pela mensagem de convites         |
+| `protected_chats` | grupos protegidos ou desprotegidos pelos admins no Telegram. Vale por cima do `PROTECTED_CHAT_IDS`             |
+| `bot_admins`      | admins adicionados ou removidos pelo Telegram. Os donos (`ADMIN_IDS`) não ficam aqui e não podem ser removidos |
+| `settings`        | configurações de runtime, como o prazo do `/avisar`                                                            |
 
 A `0001_init.sql` é o esquema da spec. A `0002_operational.sql` adiciona o que os fluxos precisaram.
 
@@ -157,6 +158,10 @@ Para trocar de banco (Postgres no Supabase ou Neon, por exemplo), implemente a i
 **Convites num botão separado.** Gerar convites para 19 grupos custa 19 chamadas. Fazer isso num update próprio mantém o callback do OAuth longe do limite de subrequests.
 
 **Proteção de grupos pelo Telegram.** A lista efetiva de grupos protegidos é `PROTECTED_CHAT_IDS` + os protegidos pelos admins − os desprotegidos pelos admins (tabela `protected_chats`). Assim um admin protege um grupo novo com um botão, sem acesso ao GitHub. Cada isolate guarda a lista em cache por até 1 minuto, então uma mudança leva no máximo isso para valer em todo lugar.
+
+**Admins pelo Telegram.** A lista efetiva de admins é `ADMIN_IDS` (donos fixos) + os ativos em `bot_admins`. Donos nunca podem ser removidos pelo Telegram, então sempre sobra alguém com acesso. Mesmo cache de 1 minuto da lista de grupos.
+
+**Contagem por grupo no `/stats`.** A Bot API não lista membros, só o total (`getChatMemberCount`). "Com cordão" são os membros verificados que o bot sabe que estão no grupo: quem entrou ou falou depois da chegada do bot, e quem verificou pelo `/start` (no fim da verificação o bot consulta `getChatMember` em cada grupo protegido). O resto do total aparece como "sem cordão".
 
 **Comando `/avisar`.** A spec pede um aviso fixado para membros antigos com prazo, mas não listava um comando para isso.
 

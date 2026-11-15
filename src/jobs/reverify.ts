@@ -8,7 +8,13 @@ import { GRANDFATHER_KEY } from "../handlers/commands.admin";
 import { errorMessage, hashId, log } from "../logger";
 import { escapeHtml, motivoAdmin, msg } from "../messages";
 import { refreshChatInfo } from "../services/access";
-import { eligibilityConfig, isAdmin, protectedChatIds, type Services } from "../services/context";
+import {
+  adminIds,
+  eligibilityConfig,
+  isAdmin,
+  protectedChatIds,
+  type Services,
+} from "../services/context";
 import { notifyAdmins, removeFromChats, safeDecline, sendDm } from "../services/telegram";
 
 const AUDIT_RETENTION_DAYS = 90;
@@ -56,7 +62,7 @@ export async function reverifyMember(
     { telegramId: member.telegramId, intraLogin: member.intraLogin, detail: result.motivo },
     nowIso,
   );
-  if (s.config.autoRemove && !isAdmin(s, member.telegramId)) {
+  if (s.config.autoRemove && !(await isAdmin(s, member.telegramId))) {
     await sendDm(s.api, member.telegramId, msg.removido);
     await removeFromChats(s, member.telegramId);
     await s.repo.audit(
@@ -148,8 +154,9 @@ export async function runDailyJobs(s: Services, subrequestBudget = 45): Promise<
   const deadline = await s.repo.getSetting(GRANDFATHER_KEY);
   let unverifiedLines: string[] = [];
   if (deadline && deadline <= nowIso) {
+    const admins = await adminIds(s);
     const unverified = (await s.repo.listUnverifiedSeen(200)).filter(
-      (u) => !isAdmin(s, u.telegramId),
+      (u) => !admins.includes(u.telegramId),
     );
     if (s.config.autoRemove) {
       for (const u of unverified) {

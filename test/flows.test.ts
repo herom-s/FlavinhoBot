@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IntraUser } from "../src/domain/eligibility";
+import { resetUserRateLimit } from "../src/handlers/commands.user";
 import { resetHelpRateLimit } from "../src/handlers/help";
 import { resetAuthRateLimits } from "../src/http/authRoutes";
 import { runDailyJobs } from "../src/jobs/reverify";
@@ -31,6 +32,7 @@ let logs: string[];
 beforeEach(() => {
   resetAuthRateLimits();
   resetHelpRateLimit();
+  resetUserRateLimit();
   logs = [];
   for (const m of ["log", "warn", "error"] as const) {
     vi.spyOn(console, m).mockImplementation((...a: unknown[]) => void logs.push(a.join(" ")));
@@ -353,7 +355,9 @@ describe("/help", () => {
     await h.update(groupCommand(USER, ADMIN_CHAT, "/help"));
     expect(h.callsOf("sendMessage").at(-1)!.payload.chat_id).toBe(ADMIN_CHAT);
     expect(lastText(h)).toContain(`<code>${USER}</code>`);
-    expect(lastText(h)).toContain("ADMIN_IDS");
+    expect(JSON.stringify(h.callsOf("sendMessage").at(-1)!.payload.reply_markup)).toContain(
+      `"callback_data":"addadmin:${USER}"`,
+    );
     expect(lastText(h)).not.toContain("Comandos de admin");
   });
 
@@ -441,6 +445,103 @@ describe("proteger grupos pelo Telegram", () => {
     expect(String(h.callsOf("editMessageText").at(-1)!.payload.text)).toContain("não pode");
     await h.update(groupCommand(USER, ADMIN_CHAT, "/help"));
     expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).not.toContain("porteiro");
+  });
+});
+
+describe("admins pelo Telegram", () => {
+  const OTHER = 777001;
+  const stats = async (h: Harness, userId: number) => {
+    const before = h.callsOf("sendMessage").length;
+    await h.update(privateCommand(userId, "/stats"));
+    return h.callsOf("sendMessage").length > before;
+  };
+
+  it("botão no /help do chat de admins torna a pessoa admin", async () => {
+    const h = new Harness();
+    expect(await stats(h, OTHER)).toBe(false);
+    await h.update(callbackQuery(ADMIN_ID, `addadmin:${OTHER}`));
+    expect(String(h.callsOf("editMessageText").at(-1)!.payload.text)).toContain("agora é admin");
+    expect(h.callsOf("setMyCommands").at(-1)!.payload).toMatchObject({
+      scope: { type: "chat", chat_id: OTHER },
+    });
+    expect(await stats(h, OTHER)).toBe(true);
+  });
+
+  it("quem não é admin não consegue tornar ninguém admin", async () => {
+    const h = new Harness();
+    await h.update(callbackQuery(USER, `addadmin:${USER}`));
+    expect(h.callsOf("answerCallbackQuery").at(-1)!.payload).toMatchObject({ show_alert: true });
+    expect(await stats(h, USER)).toBe(false);
+  });
+
+  it("/novo_admin respondendo uma mensagem, e /remover_admin tira de novo", async () => {
+    const h = new Harness();
+    const reply = privateCommand(ADMIN_ID, "/novo_admin");
+    (reply.message as Record<string, unknown>).reply_to_message = {
+      message_id: 3,
+      date: 0,
+      chat: reply.message.chat,
+      from: { id: OTHER, is_bot: false, first_name: "Ana", username: "ana42" },
+      text: "oi",
+    };
+    await h.update(reply);
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("@ana42");
+    expect(await stats(h, OTHER)).toBe(true);
+
+    await h.update(privateCommand(ADMIN_ID, `/remover_admin ${OTHER}`));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("não é mais admin");
+    expect(await stats(h, OTHER)).toBe(false);
+  });
+
+  it("/novo_admin @user só funciona para quem o bot já viu", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, "/novo_admin @desconhecido"));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("Uso:");
+
+    await h.repo.markSeen(OTHER, CHAT_A, "conhecido", h.clock.toISOString());
+    await h.update(privateCommand(ADMIN_ID, "/novo_admin @conhecido"));
+    expect(await stats(h, OTHER)).toBe(true);
+  });
+
+  it("donos (ADMIN_IDS) não podem ser removidos pelo Telegram", async () => {
+    const h = new Harness();
+    await h.update(privateCommand(ADMIN_ID, `/remover_admin ${ADMIN_ID}`));
+    expect(String(h.callsOf("sendMessage").at(-1)!.payload.text)).toContain("dono");
+    expect(await stats(h, ADMIN_ID)).toBe(true);
+  });
+
+  it("/admins lista donos e adicionados, com botão para remover os adicionados", async () => {
+    const h = new Harness();
+    await h.update(callbackQuery(ADMIN_ID, `addadmin:${OTHER}`));
+    await h.update(privateCommand(ADMIN_ID, "/admins"));
+    const last = h.callsOf("sendMessage").at(-1)!;
+    expect(String(last.payload.text)).toContain(`${ADMIN_ID}</code> (dono)`);
+    expect(JSON.stringify(last.payload.reply_markup)).toContain(`rmadmin:${OTHER}`);
+    expect(JSON.stringify(last.payload.reply_markup)).not.toContain(`rmadmin:${ADMIN_ID}`);
+  });
+});
+
+describe("/stats por grupo", () => {
+  it("mostra total, com cordão e sem cordão, contando quem já estava no grupo e verificou", async () => {
+    const h = new Harness();
+    const lineFor = async (chatId: number) => {
+      await h.update(privateCommand(ADMIN_ID, "/stats"));
+      return (
+        String(h.callsOf("sendMessage").at(-1)!.payload.text)
+          .split("\n")
+          .find((l) => l.includes(`Chat ${chatId}`)) ?? ""
+      );
+    };
+    await h.update(privateCommand(ADMIN_ID, "/sincronizar"));
+    expect(await lineFor(CHAT_A)).toContain("9 membros · ✅ 0 com cordão · ❌ 9 sem cordão");
+
+    // verifica pelo /start (sem join request): o bot descobre que a pessoa já está nos grupos
+    h.me = clone(cadete);
+    await h.update(privateCommand(USER, "/start"));
+    const state = stateFromCall(h.callsOf("sendMessage").at(-1));
+    await h.request(`${BASE_URL}/auth/callback?code=abc&state=${state}`);
+    expect(await lineFor(CHAT_A)).toContain("9 membros · ✅ 1 com cordão · ❌ 8 sem cordão");
+    expect(await lineFor(CHAT_B)).toContain("✅ 1 com cordão");
   });
 });
 

@@ -11,13 +11,16 @@ import {
   sendInvites,
   startVerification,
 } from "../services/access";
-import { protectedChatIds, type Services } from "../services/context";
+import { isAdmin, protectedChatIds, type Services } from "../services/context";
 import { removeFromChats, sendDm } from "../services/telegram";
 
 const CB_DELETE_YES = "apagar:sim";
 const CB_DELETE_NO = "apagar:nao";
 
 const limiter = new RateLimiter(15, 60_000);
+
+/** Só para testes: o limite é por isolate e seria compartilhado entre casos de teste. */
+export const resetUserRateLimit = (): void => limiter.clear();
 
 export function registerUserCommands(bot: Bot, s: Services): void {
   const priv = bot.chatType("private");
@@ -116,7 +119,7 @@ export function registerUserCommands(bot: Bot, s: Services): void {
   priv.callbackQuery(CB_DELETE_YES, async (ctx) => {
     await ctx.answerCallbackQuery();
     const userId = ctx.from.id;
-    const isAdminUser = s.config.adminIds.includes(userId);
+    const isAdminUser = await isAdmin(s, userId);
     if (!isAdminUser) await removeFromChats(s, userId);
     for (const r of await s.repo.listJoinRequestsForUser(userId)) {
       await s.api.declineChatJoinRequest(r.chatId, userId).catch(() => undefined);

@@ -138,6 +138,8 @@ export class Harness {
           member_limit: p.member_limit,
           expire_date: p.expire_date,
         };
+      case "getChatMemberCount":
+        return 10;
       case "getChat":
         return {
           id: p.chat_id,
